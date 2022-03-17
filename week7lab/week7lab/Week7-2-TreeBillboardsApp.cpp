@@ -592,7 +592,6 @@ void TreeBillboardsApp::LoadTextures()
 		mCommandList.Get(), stoneTex->Filename.c_str(),
 		stoneTex->Resource, stoneTex->UploadHeap));
 
-
 	auto treeArrayTex = std::make_unique<Texture>();
 	treeArrayTex->Name = "treeArrayTex";
 	treeArrayTex->Filename = L"../Textures/treeArray.dds";
@@ -608,6 +607,7 @@ void TreeBillboardsApp::LoadTextures()
 	mTextures[brickType2Tex->Name] = std::move(brickType2Tex);
 	mTextures[stoneTex->Name] = std::move(stoneTex);
 	mTextures[treeArrayTex->Name] = std::move(treeArrayTex);
+
 }
 
 void TreeBillboardsApp::BuildRootSignature()
@@ -673,6 +673,7 @@ void TreeBillboardsApp::BuildDescriptorHeaps()
 	auto brickType2Tex = mTextures["brickType2Tex"]->Resource;
 	auto stoneTex = mTextures["stoneTex"]->Resource;
 	auto treeArrayTex = mTextures["treeArrayTex"]->Resource;
+
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -877,13 +878,13 @@ void TreeBillboardsApp::BuildWavesGeometry()
 void TreeBillboardsApp::BuildBoxGeometry()
 {
 	GeometryGenerator geoGen;
-	GeometryGenerator::MeshData box = geoGen.CreateBox(8.0f, 8.0f, 8.0f, 3);
+	GeometryGenerator::MeshData box = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
 	GeometryGenerator::MeshData wall = geoGen.CreateBox(9.0f, 2.0f, 1.0f, 1);
 	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.0f, 30.0f, 60, 40);
 	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(0.5f, 20, 20);
 	GeometryGenerator::MeshData wallPillar = geoGen.CreateCylinder(1.0f, 1.0f, 3.0f, 4, 4);
 	GeometryGenerator::MeshData fountainPillar = geoGen.CreateCylinder(1.0f, 1.0f, 3.0f, 8, 8);
-	GeometryGenerator::MeshData wallPillarTop = geoGen.CreateCylinder(1.0f, 0.0f, 3.0f, 4, 5);
+	GeometryGenerator::MeshData wallPillarTop = geoGen.CreateCylinder(1.0f, 0.0f, 1.0f, 4, 5);
 	GeometryGenerator::MeshData fountainPillarTop = geoGen.CreateCylinder(1.0f, 0.0f, 1.0f, 8, 1);
 	GeometryGenerator::MeshData centerFountain = geoGen.CreateCylinder(2.0f, 0.0f, 1.0f, 4, 5);
 
@@ -1421,7 +1422,7 @@ void TreeBillboardsApp::BuildRenderItems()
 
 	mRitemLayer[(int)RenderLayer::AlphaTestedTreeSprites].push_back(treeSpritesRitem.get());
 
-	// 5 walls + door
+	// 5 walls (front wall is 2 walls with opening)
 	for (int i = 0; i < 1; ++i)
 	{
 		auto wallRitemFront1 = std::make_unique<RenderItem>();
@@ -1493,6 +1494,7 @@ void TreeBillboardsApp::BuildRenderItems()
 		mAllRitems.push_back(std::move(wallRitemLeft));
 		mAllRitems.push_back(std::move(wallRitemRight));
 	}
+
 	// 4 pillars
 	for (int i = 0; i < 1; ++i)
 	{
@@ -1503,7 +1505,7 @@ void TreeBillboardsApp::BuildRenderItems()
 
 		//XMStoreFloat4x4(&wallRitemFront->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 1.0f, -10.0f) * XMMatrixRotationAxis(yAxis, 1.57));
 
-		XMStoreFloat4x4(&wallPillarFLRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 2.0f, -13.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
+		XMStoreFloat4x4(&wallPillarFLRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 3.0f, -13.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
 		wallPillarFLRitem->ObjCBIndex = ObjCBIndex++;
 		wallPillarFLRitem->Mat = mMaterials["brickType2"].get();
 		wallPillarFLRitem->Geo = mGeometries["boxGeo"].get();
@@ -1515,7 +1517,7 @@ void TreeBillboardsApp::BuildRenderItems()
 		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarFLRitem.get());
 
 
-		XMStoreFloat4x4(&wallPillarFRRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(13.0f, 2.0f, 0.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
+		XMStoreFloat4x4(&wallPillarFRRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(13.0f, 3.0f, 0.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
 		wallPillarFRRitem->ObjCBIndex = ObjCBIndex++;
 		wallPillarFRRitem->Mat = mMaterials["brickType2"].get();
 		wallPillarFRRitem->Geo = mGeometries["boxGeo"].get();
@@ -1526,7 +1528,7 @@ void TreeBillboardsApp::BuildRenderItems()
 		
 		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarFRRitem.get());
 
-		XMStoreFloat4x4(&wallPillarBLRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(-13.0f, 2.0f, 0.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
+		XMStoreFloat4x4(&wallPillarBLRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(-13.0f, 3.0f, 0.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
 		wallPillarBLRitem->ObjCBIndex = ObjCBIndex++;
 		wallPillarBLRitem->Mat = mMaterials["brickType2"].get();
 		wallPillarBLRitem->Geo = mGeometries["boxGeo"].get();
@@ -1537,7 +1539,7 @@ void TreeBillboardsApp::BuildRenderItems()
 		
 		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarBLRitem.get());
 
-		XMStoreFloat4x4(&wallPillarBRRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 2.0f, 13.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
+		XMStoreFloat4x4(&wallPillarBRRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 3.0f, 13.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
 		wallPillarBRRitem->ObjCBIndex = ObjCBIndex++;
 		wallPillarBRRitem->Mat = mMaterials["brickType2"].get();
 		wallPillarBRRitem->Geo = mGeometries["boxGeo"].get();
@@ -1553,6 +1555,7 @@ void TreeBillboardsApp::BuildRenderItems()
 		mAllRitems.push_back(std::move(wallPillarBLRitem));
 		mAllRitems.push_back(std::move(wallPillarBRRitem));
 	}
+
 	// 4 pillar tops
 	for (int i = 0; i < 1; ++i)
 	{
@@ -1563,7 +1566,7 @@ void TreeBillboardsApp::BuildRenderItems()
 
 		//XMStoreFloat4x4(&wallRitemFront->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 1.0f, -10.0f) * XMMatrixRotationAxis(yAxis, 1.57));
 
-		XMStoreFloat4x4(&wallPillarFLTopRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 7.0f, -13.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
+		XMStoreFloat4x4(&wallPillarFLTopRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 6.0f, -13.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
 		wallPillarFLTopRitem->ObjCBIndex = ObjCBIndex++;
 		wallPillarFLTopRitem->Mat = mMaterials["stone"].get();
 		wallPillarFLTopRitem->Geo = mGeometries["boxGeo"].get();
@@ -1574,7 +1577,7 @@ void TreeBillboardsApp::BuildRenderItems()
 
 		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarFLTopRitem.get());
 
-		XMStoreFloat4x4(&wallPillarFRTopRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(13.0f, 7.0f, 0.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
+		XMStoreFloat4x4(&wallPillarFRTopRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(13.0f, 6.0f, 0.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
 		wallPillarFRTopRitem->ObjCBIndex = ObjCBIndex++;
 		wallPillarFRTopRitem->Mat = mMaterials["stone"].get();
 		wallPillarFRTopRitem->Geo = mGeometries["boxGeo"].get();
@@ -1585,7 +1588,7 @@ void TreeBillboardsApp::BuildRenderItems()
 
 		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarFRTopRitem.get());
 
-		XMStoreFloat4x4(&wallPillarBLTopRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(-13.0f, 7.0f, 0.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
+		XMStoreFloat4x4(&wallPillarBLTopRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(-13.0f, 6.0f, 0.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
 		wallPillarBLTopRitem->ObjCBIndex = ObjCBIndex++;
 		wallPillarBLTopRitem->Mat = mMaterials["stone"].get();
 		wallPillarBLTopRitem->Geo = mGeometries["boxGeo"].get();
@@ -1596,7 +1599,7 @@ void TreeBillboardsApp::BuildRenderItems()
 
 		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarBLTopRitem.get());
 
-		XMStoreFloat4x4(&wallPillarBRTopRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 7.0f, 13.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
+		XMStoreFloat4x4(&wallPillarBRTopRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 6.0f, 13.0f) * XMMatrixRotationAxis(yAxis, degreeRotation45));
 		wallPillarBRTopRitem->ObjCBIndex = ObjCBIndex++;
 		wallPillarBRTopRitem->Mat = mMaterials["stone"].get();
 		wallPillarBRTopRitem->Geo = mGeometries["boxGeo"].get();
@@ -1607,14 +1610,238 @@ void TreeBillboardsApp::BuildRenderItems()
 
 		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarBRTopRitem.get());
 
-
-
-
 		mAllRitems.push_back(std::move(wallPillarFLTopRitem));
 		mAllRitems.push_back(std::move(wallPillarFRTopRitem));
 		mAllRitems.push_back(std::move(wallPillarBLTopRitem));
 		mAllRitems.push_back(std::move(wallPillarBRTopRitem));
 	}
+
+	// blocks on top of pillars around pillar tops
+	for (int i = 0; i < 1; ++i)
+	{
+		//front left pillar tops
+		auto wallPillarFLTopFLBlockRitem = std::make_unique<RenderItem>();
+		auto wallPillarFLTopFRBlockRitem = std::make_unique<RenderItem>();
+		auto wallPillarFLTopBLBlockRitem = std::make_unique<RenderItem>();
+		auto wallPillarFLTopBRBlockRitem = std::make_unique<RenderItem>();
+
+		//front right pillar tops
+		auto wallPillarFRTopFLBlockRitem = std::make_unique<RenderItem>();
+		auto wallPillarFRTopFRBlockRitem = std::make_unique<RenderItem>();
+		auto wallPillarFRTopBLBlockRitem = std::make_unique<RenderItem>();
+		auto wallPillarFRTopBRBlockRitem = std::make_unique<RenderItem>();
+
+		//back left pillar tops
+		auto wallPillarBLTopFLBlockRitem = std::make_unique<RenderItem>();
+		auto wallPillarBLTopFRBlockRitem = std::make_unique<RenderItem>();
+		auto wallPillarBLTopBLBlockRitem = std::make_unique<RenderItem>();
+		auto wallPillarBLTopBRBlockRitem = std::make_unique<RenderItem>();
+
+		//back right pillar tops
+		auto wallPillarBRTopFLBlockRitem = std::make_unique<RenderItem>();
+		auto wallPillarBRTopFRBlockRitem = std::make_unique<RenderItem>();
+		auto wallPillarBRTopBLBlockRitem = std::make_unique<RenderItem>();
+		auto wallPillarBRTopBRBlockRitem = std::make_unique<RenderItem>();
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+		XMStoreFloat4x4(&wallPillarFLTopFLBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(-10.1f, 6.5f, -10.1f));
+		wallPillarFLTopFLBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarFLTopFLBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarFLTopFLBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarFLTopFLBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarFLTopFLBlockRitem->IndexCount = wallPillarFLTopFLBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarFLTopFLBlockRitem->StartIndexLocation = wallPillarFLTopFLBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarFLTopFLBlockRitem->BaseVertexLocation = wallPillarFLTopFLBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarFLTopFLBlockRitem.get());
+
+
+		XMStoreFloat4x4(&wallPillarFLTopFRBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(-8.2f, 6.5f, -10.1f));
+		wallPillarFLTopFRBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarFLTopFRBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarFLTopFRBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarFLTopFRBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarFLTopFRBlockRitem->IndexCount = wallPillarFLTopFRBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarFLTopFRBlockRitem->StartIndexLocation = wallPillarFLTopFRBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarFLTopFRBlockRitem->BaseVertexLocation = wallPillarFLTopFRBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarFLTopFRBlockRitem.get());
+
+
+		XMStoreFloat4x4(&wallPillarFLTopBLBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(-10.1f, 6.5f, -8.2f));
+		wallPillarFLTopBLBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarFLTopBLBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarFLTopBLBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarFLTopBLBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarFLTopBLBlockRitem->IndexCount = wallPillarFLTopBLBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarFLTopBLBlockRitem->StartIndexLocation = wallPillarFLTopBLBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarFLTopBLBlockRitem->BaseVertexLocation = wallPillarFLTopBLBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarFLTopBLBlockRitem.get());
+
+
+		XMStoreFloat4x4(&wallPillarFLTopBRBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(-8.2f, 6.5f, -8.2f));
+		wallPillarFLTopBRBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarFLTopBRBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarFLTopBRBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarFLTopBRBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarFLTopBRBlockRitem->IndexCount = wallPillarFLTopBRBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarFLTopBRBlockRitem->StartIndexLocation = wallPillarFLTopBRBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarFLTopBRBlockRitem->BaseVertexLocation = wallPillarFLTopBRBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarFLTopBRBlockRitem.get());
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+		XMStoreFloat4x4(&wallPillarFRTopFLBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(8.2f, 6.5f, -10.1f));
+		wallPillarFRTopFLBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarFRTopFLBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarFRTopFLBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarFRTopFLBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarFRTopFLBlockRitem->IndexCount = wallPillarFRTopFLBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarFRTopFLBlockRitem->StartIndexLocation = wallPillarFRTopFLBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarFRTopFLBlockRitem->BaseVertexLocation = wallPillarFRTopFLBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarFRTopFLBlockRitem.get());
+
+
+		XMStoreFloat4x4(&wallPillarFRTopFRBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(10.1f, 6.5f, -10.1f));
+		wallPillarFRTopFRBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarFRTopFRBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarFRTopFRBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarFRTopFRBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarFRTopFRBlockRitem->IndexCount = wallPillarFRTopFRBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarFRTopFRBlockRitem->StartIndexLocation = wallPillarFRTopFRBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarFRTopFRBlockRitem->BaseVertexLocation = wallPillarFRTopFRBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarFRTopFRBlockRitem.get());
+
+		XMStoreFloat4x4(&wallPillarFRTopBLBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(8.2f, 6.5f, -8.2f));
+		wallPillarFRTopBLBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarFRTopBLBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarFRTopBLBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarFRTopBLBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarFRTopBLBlockRitem->IndexCount = wallPillarFRTopBLBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarFRTopBLBlockRitem->StartIndexLocation = wallPillarFRTopBLBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarFRTopBLBlockRitem->BaseVertexLocation = wallPillarFRTopBLBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarFRTopBLBlockRitem.get());
+
+		XMStoreFloat4x4(&wallPillarFRTopBRBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(10.1f, 6.5f, -8.2f));
+		wallPillarFRTopBRBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarFRTopBRBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarFRTopBRBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarFRTopBRBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarFRTopBRBlockRitem->IndexCount = wallPillarFRTopBRBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarFRTopBRBlockRitem->StartIndexLocation = wallPillarFRTopBRBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarFRTopBRBlockRitem->BaseVertexLocation = wallPillarFRTopBRBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarFRTopBRBlockRitem.get());
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+		XMStoreFloat4x4(&wallPillarBLTopFLBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(-10.1f, 6.5f, 8.2f));
+		wallPillarBLTopFLBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarBLTopFLBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarBLTopFLBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarBLTopFLBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarBLTopFLBlockRitem->IndexCount = wallPillarBLTopFLBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarBLTopFLBlockRitem->StartIndexLocation = wallPillarBLTopFLBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarBLTopFLBlockRitem->BaseVertexLocation = wallPillarBLTopFLBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarBLTopFLBlockRitem.get());
+
+
+		XMStoreFloat4x4(&wallPillarBLTopFRBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(-8.2f, 6.5f, 8.2));
+		wallPillarBLTopFRBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarBLTopFRBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarBLTopFRBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarBLTopFRBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarBLTopFRBlockRitem->IndexCount = wallPillarBLTopFRBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarBLTopFRBlockRitem->StartIndexLocation = wallPillarBLTopFRBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarBLTopFRBlockRitem->BaseVertexLocation = wallPillarBLTopFRBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarBLTopFRBlockRitem.get());
+
+		XMStoreFloat4x4(&wallPillarBLTopBLBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(-10.1f, 6.5f, 10.1f));
+		wallPillarBLTopBLBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarBLTopBLBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarBLTopBLBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarBLTopBLBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarBLTopBLBlockRitem->IndexCount = wallPillarBLTopBLBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarBLTopBLBlockRitem->StartIndexLocation = wallPillarBLTopBLBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarBLTopBLBlockRitem->BaseVertexLocation = wallPillarBLTopBLBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarBLTopBLBlockRitem.get());
+
+		XMStoreFloat4x4(&wallPillarBLTopBRBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(-8.2f, 6.5f, 10.1f));
+		wallPillarBLTopBRBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarBLTopBRBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarBLTopBRBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarBLTopBRBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarBLTopBRBlockRitem->IndexCount = wallPillarBLTopBRBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarBLTopBRBlockRitem->StartIndexLocation = wallPillarBLTopBRBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarBLTopBRBlockRitem->BaseVertexLocation = wallPillarBLTopBRBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarBLTopBRBlockRitem.get());
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+		XMStoreFloat4x4(&wallPillarBRTopFLBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(8.2f, 6.5f, 8.2f));
+		wallPillarBRTopFLBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarBRTopFLBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarBRTopFLBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarBRTopFLBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarBRTopFLBlockRitem->IndexCount = wallPillarBRTopFLBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarBRTopFLBlockRitem->StartIndexLocation = wallPillarBRTopFLBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarBRTopFLBlockRitem->BaseVertexLocation = wallPillarBRTopFLBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarBRTopFLBlockRitem.get());
+
+
+		XMStoreFloat4x4(&wallPillarBRTopFRBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(10.1f, 6.5f, 8.2f));
+		wallPillarBRTopFRBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarBRTopFRBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarBRTopFRBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarBRTopFRBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarBRTopFRBlockRitem->IndexCount = wallPillarBRTopFRBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarBRTopFRBlockRitem->StartIndexLocation = wallPillarBRTopFRBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarBRTopFRBlockRitem->BaseVertexLocation = wallPillarBRTopFRBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarBRTopFRBlockRitem.get());
+
+		XMStoreFloat4x4(&wallPillarBRTopBLBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(8.2f, 6.5f, 10.1f));
+		wallPillarBRTopBLBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarBRTopBLBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarBRTopBLBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarBRTopBLBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarBRTopBLBlockRitem->IndexCount = wallPillarBRTopBLBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarBRTopBLBlockRitem->StartIndexLocation = wallPillarBRTopBLBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarBRTopBLBlockRitem->BaseVertexLocation = wallPillarBRTopBLBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarBRTopBLBlockRitem.get());
+
+		XMStoreFloat4x4(&wallPillarBRTopBRBlockRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(10.1f, 6.5f, 10.1f));
+		wallPillarBRTopBRBlockRitem->ObjCBIndex = ObjCBIndex++;
+		wallPillarBRTopBRBlockRitem->Mat = mMaterials["brickType2"].get();
+		wallPillarBRTopBRBlockRitem->Geo = mGeometries["boxGeo"].get();
+		wallPillarBRTopBRBlockRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallPillarBRTopBRBlockRitem->IndexCount = wallPillarBRTopBRBlockRitem->Geo->DrawArgs["box"].IndexCount;
+		wallPillarBRTopBRBlockRitem->StartIndexLocation = wallPillarBRTopBRBlockRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		wallPillarBRTopBRBlockRitem->BaseVertexLocation = wallPillarBRTopBRBlockRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallPillarBRTopBRBlockRitem.get());
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+		mAllRitems.push_back(std::move(wallPillarFLTopFLBlockRitem));
+		mAllRitems.push_back(std::move(wallPillarFLTopFRBlockRitem));
+		mAllRitems.push_back(std::move(wallPillarFLTopBLBlockRitem));
+		mAllRitems.push_back(std::move(wallPillarFLTopBRBlockRitem));
+
+		mAllRitems.push_back(std::move(wallPillarFRTopFLBlockRitem));
+		mAllRitems.push_back(std::move(wallPillarFRTopFRBlockRitem));
+		mAllRitems.push_back(std::move(wallPillarFRTopBLBlockRitem));
+		mAllRitems.push_back(std::move(wallPillarFRTopBRBlockRitem));
+
+		mAllRitems.push_back(std::move(wallPillarBLTopFLBlockRitem));
+		mAllRitems.push_back(std::move(wallPillarBLTopFRBlockRitem));
+		mAllRitems.push_back(std::move(wallPillarBLTopBLBlockRitem));
+		mAllRitems.push_back(std::move(wallPillarBLTopBRBlockRitem));
+
+		mAllRitems.push_back(std::move(wallPillarBRTopFLBlockRitem));
+		mAllRitems.push_back(std::move(wallPillarBRTopFRBlockRitem));
+		mAllRitems.push_back(std::move(wallPillarBRTopBLBlockRitem));
+		mAllRitems.push_back(std::move(wallPillarBRTopBRBlockRitem));
+
+
+	}
+
 	// Center pillars
 	for (int i = 0; i < 1; ++i)
 	{
@@ -1675,6 +1902,7 @@ void TreeBillboardsApp::BuildRenderItems()
 		mAllRitems.push_back(std::move(centerPillarLeftRitem));
 		mAllRitems.push_back(std::move(centerPillarRightRitem));
 	}
+
 	// center pillar tops
 	for (int i = 0; i < 1; ++i)
 	{
