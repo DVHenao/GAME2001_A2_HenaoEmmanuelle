@@ -1361,7 +1361,9 @@ void TreeBillboardsApp::BuildMaterials()
 void TreeBillboardsApp::BuildRenderItems()
 {
 
+	XMVECTOR xAxis = { 1.0f,0.0f,0.0f };
 	XMVECTOR yAxis = { 0.0f,1.0f,0.0f };
+	XMVECTOR zAxis = { 0.0f,0.0f,1.0f };
 	UINT ObjCBIndex = 4;
 	float degreeRotation45 = 0.785398;
 	float degreeRotation90 = 1.5708;
@@ -1493,6 +1495,174 @@ void TreeBillboardsApp::BuildRenderItems()
 		mAllRitems.push_back(std::move(wallRitemBack));
 		mAllRitems.push_back(std::move(wallRitemLeft));
 		mAllRitems.push_back(std::move(wallRitemRight));
+	}
+
+	//fences on top of walls
+	for (int i = 0; i < 1; i++)
+	{
+		auto wallRitemFront1FenceFront = std::make_unique<RenderItem>();
+		auto wallRitemFront2FenceFront = std::make_unique<RenderItem>();
+		auto wallRitemBackFenceFront = std::make_unique<RenderItem>();
+		auto wallRitemLeftFenceFront = std::make_unique<RenderItem>();
+		auto wallRitemRightFenceFront = std::make_unique<RenderItem>();
+
+		auto wallRitemFront1FenceBack = std::make_unique<RenderItem>();
+		auto wallRitemFront2FenceBack = std::make_unique<RenderItem>();
+		auto wallRitemBackFenceBack = std::make_unique<RenderItem>();
+		auto wallRitemLeftFenceBack = std::make_unique<RenderItem>();
+		auto wallRitemRightFenceBack = std::make_unique<RenderItem>();
+
+		auto wallRitemFront1FenceSide = std::make_unique<RenderItem>();
+		auto wallRitemFront2FenceSide = std::make_unique<RenderItem>();
+
+		XMStoreFloat4x4(&wallRitemFront1FenceFront->World, XMMatrixScaling(6.0f, 1.0f, 0.1f) * XMMatrixTranslation(5.0f, 4.5, -10.25f));
+		wallRitemFront1FenceFront->ObjCBIndex = ObjCBIndex++;
+		wallRitemFront1FenceFront->Mat = mMaterials["wirefence"].get();
+		wallRitemFront1FenceFront->Geo = mGeometries["boxGeo"].get();
+		wallRitemFront1FenceFront->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallRitemFront1FenceFront->IndexCount = wallRitemFront1FenceFront->Geo->DrawArgs["box"].IndexCount;
+		wallRitemFront1FenceFront->StartIndexLocation = wallRitemFront1FenceFront->Geo->DrawArgs["box"].StartIndexLocation;
+		wallRitemFront1FenceFront->BaseVertexLocation = wallRitemFront1FenceFront->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallRitemFront1FenceFront.get());
+
+
+		XMStoreFloat4x4(&wallRitemFront2FenceFront->World, XMMatrixScaling(6.0f, 1.0f, 0.1f) * XMMatrixTranslation(-5.0f, 4.5, -10.25f));
+		wallRitemFront2FenceFront->ObjCBIndex = ObjCBIndex++;
+		wallRitemFront2FenceFront->Mat = mMaterials["wirefence"].get();
+		wallRitemFront2FenceFront->Geo = mGeometries["boxGeo"].get();
+		wallRitemFront2FenceFront->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallRitemFront2FenceFront->IndexCount = wallRitemFront2FenceFront->Geo->DrawArgs["box"].IndexCount;
+		wallRitemFront2FenceFront->StartIndexLocation = wallRitemFront2FenceFront->Geo->DrawArgs["box"].StartIndexLocation;
+		wallRitemFront2FenceFront->BaseVertexLocation = wallRitemFront2FenceFront->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallRitemFront2FenceFront.get());
+
+
+		XMStoreFloat4x4(&wallRitemBackFenceFront->World, XMMatrixScaling(16.0f, 1.0f, 0.1f) * XMMatrixTranslation(0.0f, 4.5, 10.25f));
+		wallRitemBackFenceFront->ObjCBIndex = ObjCBIndex++;
+		wallRitemBackFenceFront->Mat = mMaterials["wirefence"].get();
+		wallRitemBackFenceFront->Geo = mGeometries["boxGeo"].get();
+		wallRitemBackFenceFront->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallRitemBackFenceFront->IndexCount = wallRitemBackFenceFront->Geo->DrawArgs["box"].IndexCount;
+		wallRitemBackFenceFront->StartIndexLocation = wallRitemBackFenceFront->Geo->DrawArgs["box"].StartIndexLocation;
+		wallRitemBackFenceFront->BaseVertexLocation = wallRitemBackFenceFront->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallRitemBackFenceFront.get());
+
+
+		XMStoreFloat4x4(&wallRitemLeftFenceFront->World, XMMatrixScaling(16.0f, 1.0f, 0.1f) * XMMatrixTranslation(0.0f, 4.5, 10.25f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		wallRitemLeftFenceFront->ObjCBIndex = ObjCBIndex++;
+		wallRitemLeftFenceFront->Mat = mMaterials["wirefence"].get();
+		wallRitemLeftFenceFront->Geo = mGeometries["boxGeo"].get();
+		wallRitemLeftFenceFront->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallRitemLeftFenceFront->IndexCount = wallRitemLeftFenceFront->Geo->DrawArgs["box"].IndexCount;
+		wallRitemLeftFenceFront->StartIndexLocation = wallRitemLeftFenceFront->Geo->DrawArgs["box"].StartIndexLocation;
+		wallRitemLeftFenceFront->BaseVertexLocation = wallRitemLeftFenceFront->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallRitemLeftFenceFront.get());
+
+
+		XMStoreFloat4x4(&wallRitemRightFenceFront->World, XMMatrixScaling(16.0f, 1.0f, 0.1f) * XMMatrixTranslation(0.0f, 4.5, -10.25f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		wallRitemRightFenceFront->ObjCBIndex = ObjCBIndex++;
+		wallRitemRightFenceFront->Mat = mMaterials["wirefence"].get();
+		wallRitemRightFenceFront->Geo = mGeometries["boxGeo"].get();
+		wallRitemRightFenceFront->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallRitemRightFenceFront->IndexCount = wallRitemRightFenceFront->Geo->DrawArgs["box"].IndexCount;
+		wallRitemRightFenceFront->StartIndexLocation = wallRitemRightFenceFront->Geo->DrawArgs["box"].StartIndexLocation;
+		wallRitemRightFenceFront->BaseVertexLocation = wallRitemRightFenceFront->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallRitemRightFenceFront.get());
+
+		//BACK FENCES//
+
+		XMStoreFloat4x4(&wallRitemFront1FenceBack->World, XMMatrixScaling(6.0f, 1.0f, 0.1f) * XMMatrixTranslation(5.0f, 4.5, -8.75f));
+		wallRitemFront1FenceBack->ObjCBIndex = ObjCBIndex++;
+		wallRitemFront1FenceBack->Mat = mMaterials["wirefence"].get();
+		wallRitemFront1FenceBack->Geo = mGeometries["boxGeo"].get();
+		wallRitemFront1FenceBack->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallRitemFront1FenceBack->IndexCount = wallRitemFront1FenceBack->Geo->DrawArgs["box"].IndexCount;
+		wallRitemFront1FenceBack->StartIndexLocation = wallRitemFront1FenceBack->Geo->DrawArgs["box"].StartIndexLocation;
+		wallRitemFront1FenceBack->BaseVertexLocation = wallRitemFront1FenceBack->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallRitemFront1FenceBack.get());
+
+
+		XMStoreFloat4x4(&wallRitemFront2FenceBack->World, XMMatrixScaling(6.0f, 1.0f, 0.1f) * XMMatrixTranslation(-5.0f, 4.5, -8.75f));
+		wallRitemFront2FenceBack->ObjCBIndex = ObjCBIndex++;
+		wallRitemFront2FenceBack->Mat = mMaterials["wirefence"].get();
+		wallRitemFront2FenceBack->Geo = mGeometries["boxGeo"].get();
+		wallRitemFront2FenceBack->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallRitemFront2FenceBack->IndexCount = wallRitemFront2FenceBack->Geo->DrawArgs["box"].IndexCount;
+		wallRitemFront2FenceBack->StartIndexLocation = wallRitemFront2FenceBack->Geo->DrawArgs["box"].StartIndexLocation;
+		wallRitemFront2FenceBack->BaseVertexLocation = wallRitemFront2FenceBack->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallRitemFront2FenceBack.get());
+
+
+		XMStoreFloat4x4(&wallRitemBackFenceBack->World, XMMatrixScaling(16.0f, 1.0f, 0.1f) * XMMatrixTranslation(0.0f, 4.5, 8.75f));
+		wallRitemBackFenceBack->ObjCBIndex = ObjCBIndex++;
+		wallRitemBackFenceBack->Mat = mMaterials["wirefence"].get();
+		wallRitemBackFenceBack->Geo = mGeometries["boxGeo"].get();
+		wallRitemBackFenceBack->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallRitemBackFenceBack->IndexCount = wallRitemBackFenceBack->Geo->DrawArgs["box"].IndexCount;
+		wallRitemBackFenceBack->StartIndexLocation = wallRitemBackFenceBack->Geo->DrawArgs["box"].StartIndexLocation;
+		wallRitemBackFenceBack->BaseVertexLocation = wallRitemBackFenceBack->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallRitemBackFenceBack.get());
+
+
+		XMStoreFloat4x4(&wallRitemLeftFenceBack->World, XMMatrixScaling(16.0f, 1.0f, 0.1f) * XMMatrixTranslation(0.0f, 4.5, 8.75f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		wallRitemLeftFenceBack->ObjCBIndex = ObjCBIndex++;
+		wallRitemLeftFenceBack->Mat = mMaterials["wirefence"].get();
+		wallRitemLeftFenceBack->Geo = mGeometries["boxGeo"].get();
+		wallRitemLeftFenceBack->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallRitemLeftFenceBack->IndexCount = wallRitemLeftFenceBack->Geo->DrawArgs["box"].IndexCount;
+		wallRitemLeftFenceBack->StartIndexLocation = wallRitemLeftFenceBack->Geo->DrawArgs["box"].StartIndexLocation;
+		wallRitemLeftFenceBack->BaseVertexLocation = wallRitemLeftFenceBack->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallRitemLeftFenceBack.get());
+
+
+		XMStoreFloat4x4(&wallRitemRightFenceBack->World, XMMatrixScaling(16.0f, 1.0f, 0.1f) * XMMatrixTranslation(0.0f, 4.5, -8.75f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		wallRitemRightFenceBack->ObjCBIndex = ObjCBIndex++;
+		wallRitemRightFenceBack->Mat = mMaterials["wirefence"].get();
+		wallRitemRightFenceBack->Geo = mGeometries["boxGeo"].get();
+		wallRitemRightFenceBack->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallRitemRightFenceBack->IndexCount = wallRitemRightFenceBack->Geo->DrawArgs["box"].IndexCount;
+		wallRitemRightFenceBack->StartIndexLocation = wallRitemRightFenceBack->Geo->DrawArgs["box"].StartIndexLocation;
+		wallRitemRightFenceBack->BaseVertexLocation = wallRitemRightFenceBack->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallRitemRightFenceBack.get());
+
+		//SIDE FENCES//
+
+		XMStoreFloat4x4(&wallRitemFront1FenceSide->World, XMMatrixScaling(1.5f, 1.0f, 0.1f) * XMMatrixTranslation(9.5f, 4.5, 2.0f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		wallRitemFront1FenceSide->ObjCBIndex = ObjCBIndex++;
+		wallRitemFront1FenceSide->Mat = mMaterials["wirefence"].get();
+		wallRitemFront1FenceSide->Geo = mGeometries["boxGeo"].get();
+		wallRitemFront1FenceSide->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallRitemFront1FenceSide->IndexCount = wallRitemFront1FenceSide->Geo->DrawArgs["box"].IndexCount;
+		wallRitemFront1FenceSide->StartIndexLocation = wallRitemFront1FenceSide->Geo->DrawArgs["box"].StartIndexLocation;
+		wallRitemFront1FenceSide->BaseVertexLocation = wallRitemFront1FenceSide->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallRitemFront1FenceSide.get());
+
+
+		XMStoreFloat4x4(&wallRitemFront2FenceSide->World, XMMatrixScaling(1.5f, 1.0f, 0.1f) * XMMatrixTranslation(9.5f, 4.5, -2.0f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		wallRitemFront2FenceSide->ObjCBIndex = ObjCBIndex++;
+		wallRitemFront2FenceSide->Mat = mMaterials["wirefence"].get();
+		wallRitemFront2FenceSide->Geo = mGeometries["boxGeo"].get();
+		wallRitemFront2FenceSide->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		wallRitemFront2FenceSide->IndexCount = wallRitemFront2FenceSide->Geo->DrawArgs["box"].IndexCount;
+		wallRitemFront2FenceSide->StartIndexLocation = wallRitemFront2FenceSide->Geo->DrawArgs["box"].StartIndexLocation;
+		wallRitemFront2FenceSide->BaseVertexLocation = wallRitemFront2FenceSide->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(wallRitemFront2FenceSide.get());
+
+
+		mAllRitems.push_back(std::move(wallRitemFront1FenceFront));
+		mAllRitems.push_back(std::move(wallRitemFront2FenceFront));
+		mAllRitems.push_back(std::move(wallRitemBackFenceFront));
+		mAllRitems.push_back(std::move(wallRitemLeftFenceFront));
+		mAllRitems.push_back(std::move(wallRitemRightFenceFront));
+
+		mAllRitems.push_back(std::move(wallRitemFront1FenceBack));
+		mAllRitems.push_back(std::move(wallRitemFront2FenceBack));
+		mAllRitems.push_back(std::move(wallRitemBackFenceBack));
+		mAllRitems.push_back(std::move(wallRitemLeftFenceBack));
+		mAllRitems.push_back(std::move(wallRitemRightFenceBack));
+
+			mAllRitems.push_back(std::move(wallRitemFront1FenceSide));
+		mAllRitems.push_back(std::move(wallRitemFront2FenceSide));
 	}
 
 	// 4 pillars
@@ -1965,9 +2135,73 @@ void TreeBillboardsApp::BuildRenderItems()
 
 
 	}
-	
+
+	//door NEEDS TO BE WOOD TEXTURE
+	for (int i = 0; i < 1; i++)
+	{
+		auto door = std::make_unique<RenderItem>();
+		auto leftAnchor = std::make_unique<RenderItem>();
+		auto rightAnchor = std::make_unique<RenderItem>();
+
+		///////////MAKE WOOD TEXTURE///////////////
+
+		XMStoreFloat4x4(&door->World, XMMatrixScaling(3.5f, 0.1f, 4.0f) * XMMatrixTranslation(0.0f, -6.5f, -10.0f) * XMMatrixRotationAxis(xAxis, degreeRotation45)) ;
+		door->ObjCBIndex = ObjCBIndex++;
+		door->Mat = mMaterials["stone"].get();
+		door->Geo = mGeometries["boxGeo"].get();
+		door->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		door->IndexCount = door->Geo->DrawArgs["box"].IndexCount;
+		door->StartIndexLocation = door->Geo->DrawArgs["box"].StartIndexLocation;
+		door->BaseVertexLocation = door->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(door.get());
+
+		////////////////////////////////////////////
+
+		XMStoreFloat4x4(&leftAnchor->World, XMMatrixScaling(0.1f, 1.0f, 0.1f) * XMMatrixTranslation(-1.7f, -10.7f, -3)* XMMatrixRotationAxis(xAxis, degreeRotation90)) ;
+		leftAnchor->ObjCBIndex = ObjCBIndex++;
+		leftAnchor->Mat = mMaterials["stone"].get();
+		leftAnchor->Geo = mGeometries["boxGeo"].get();
+		leftAnchor->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		leftAnchor->IndexCount = leftAnchor->Geo->DrawArgs["wallPillar"].IndexCount;
+		leftAnchor->StartIndexLocation = leftAnchor->Geo->DrawArgs["wallPillar"].StartIndexLocation;
+		leftAnchor->BaseVertexLocation = leftAnchor->Geo->DrawArgs["wallPillar"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(leftAnchor.get());
+
+		XMStoreFloat4x4(&rightAnchor->World, XMMatrixScaling(0.1f, 1.0f, 0.1f) * XMMatrixTranslation(1.7f, -10.7f, -3)* XMMatrixRotationAxis(xAxis, degreeRotation90)) ;
+		rightAnchor->ObjCBIndex = ObjCBIndex++;
+		rightAnchor->Mat = mMaterials["stone"].get();
+		rightAnchor->Geo = mGeometries["boxGeo"].get();
+		rightAnchor->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		rightAnchor->IndexCount = rightAnchor->Geo->DrawArgs["wallPillar"].IndexCount;
+		rightAnchor->StartIndexLocation = rightAnchor->Geo->DrawArgs["wallPillar"].StartIndexLocation;
+		rightAnchor->BaseVertexLocation = rightAnchor->Geo->DrawArgs["wallPillar"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(rightAnchor.get());
 
 
+		mAllRitems.push_back(std::move(door));
+		mAllRitems.push_back(std::move(leftAnchor));
+		mAllRitems.push_back(std::move(rightAnchor));
+
+	}
+
+	//floor
+	for (int i = 0; i < 1; i++)
+	{
+		auto floor = std::make_unique<RenderItem>();
+
+		XMStoreFloat4x4(&floor->World, XMMatrixScaling(20.5, 0.5f, 20.5f) * XMMatrixTranslation(0.0f, 1.35f, 0.0f)) ;
+		floor->ObjCBIndex = ObjCBIndex++;
+		floor->Mat = mMaterials["stone"].get();
+		floor->Geo = mGeometries["boxGeo"].get();
+		floor->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		floor->IndexCount = floor->Geo->DrawArgs["box"].IndexCount;
+		floor->StartIndexLocation = floor->Geo->DrawArgs["box"].StartIndexLocation;
+		floor->BaseVertexLocation = floor->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(floor.get());
+
+		mAllRitems.push_back(std::move(floor));
+	}
+	 
     mAllRitems.push_back(std::move(wavesRitem));
     mAllRitems.push_back(std::move(gridRitem));
 	mAllRitems.push_back(std::move(centerFountainRitem));
