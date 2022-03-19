@@ -592,6 +592,23 @@ void TreeBillboardsApp::LoadTextures()
 		mCommandList.Get(), stoneTex->Filename.c_str(),
 		stoneTex->Resource, stoneTex->UploadHeap));
 
+	auto tileTex = std::make_unique<Texture>();
+	tileTex->Name = "tileTex";
+	tileTex->Filename = L"../Textures/tile.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), tileTex->Filename.c_str(),
+		tileTex->Resource, tileTex->UploadHeap));
+
+
+	// CHANGE THE FILENAME TO WOOD.DDS WHEN ITS WORKING AGAIN
+	auto woodTex = std::make_unique<Texture>();
+	woodTex->Name = "woodTex";
+	woodTex->Filename = L"../Textures/ice.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), woodTex->Filename.c_str(),
+		woodTex->Resource, woodTex->UploadHeap));
+
+
 	auto treeArrayTex = std::make_unique<Texture>();
 	treeArrayTex->Name = "treeArrayTex";
 	treeArrayTex->Filename = L"../Textures/treeArray.dds";
@@ -606,6 +623,8 @@ void TreeBillboardsApp::LoadTextures()
 	mTextures[brickType1Tex->Name] = std::move(brickType1Tex);
 	mTextures[brickType2Tex->Name] = std::move(brickType2Tex);
 	mTextures[stoneTex->Name] = std::move(stoneTex);
+	mTextures[tileTex->Name] = std::move(tileTex);
+	mTextures[woodTex->Name] = std::move(woodTex);
 	mTextures[treeArrayTex->Name] = std::move(treeArrayTex);
 
 }
@@ -656,7 +675,7 @@ void TreeBillboardsApp::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 7;
+	srvHeapDesc.NumDescriptors = 9;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -672,6 +691,8 @@ void TreeBillboardsApp::BuildDescriptorHeaps()
 	auto brickType1Tex = mTextures["brickType1Tex"]->Resource;
 	auto brickType2Tex = mTextures["brickType2Tex"]->Resource;
 	auto stoneTex = mTextures["stoneTex"]->Resource;
+	auto tileTex = mTextures["tileTex"]->Resource;
+	auto woodTex = mTextures["woodTex"]->Resource;
 	auto treeArrayTex = mTextures["treeArrayTex"]->Resource;
 
 
@@ -712,6 +733,19 @@ void TreeBillboardsApp::BuildDescriptorHeaps()
 
 	srvDesc.Format = stoneTex->GetDesc().Format;
 	md3dDevice->CreateShaderResourceView(stoneTex.Get(), &srvDesc, hDescriptor);
+
+	// next descriptor
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+
+	srvDesc.Format = tileTex->GetDesc().Format;
+	md3dDevice->CreateShaderResourceView(tileTex.Get(), &srvDesc, hDescriptor);
+
+	// next descriptor
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+
+	srvDesc.Format = woodTex->GetDesc().Format;
+	md3dDevice->CreateShaderResourceView(woodTex.Get(), &srvDesc, hDescriptor);
+
 
 	// next descriptor
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
@@ -1341,10 +1375,26 @@ void TreeBillboardsApp::BuildMaterials()
 	stone->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	stone->Roughness = 0.125f;
 
+	auto tile = std::make_unique<Material>();
+	tile->Name = "tile";
+	tile->MatCBIndex = 6;
+	tile->DiffuseSrvHeapIndex = 6;
+	tile->DiffuseAlbedo = XMFLOAT4(0.4f, 0.4f, 0.4f, 1.0f);
+	tile->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	tile->Roughness = 0.125f;
+
+	auto wood = std::make_unique<Material>();
+	wood->Name = "wood";
+	wood->MatCBIndex = 7;
+	wood->DiffuseSrvHeapIndex = 7;
+	wood->DiffuseAlbedo = XMFLOAT4(0.4f, 0.4f, 0.4f, 1.0f);
+	wood->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	wood->Roughness = 0.125f;
+
 	auto treeSprites = std::make_unique<Material>();
 	treeSprites->Name = "treeSprites";
-	treeSprites->MatCBIndex = 6;
-	treeSprites->DiffuseSrvHeapIndex = 6;
+	treeSprites->MatCBIndex = 8;
+	treeSprites->DiffuseSrvHeapIndex = 8;
 	treeSprites->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	treeSprites->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	treeSprites->Roughness = 0.125f;
@@ -1355,6 +1405,8 @@ void TreeBillboardsApp::BuildMaterials()
 	mMaterials["brickType1"] = std::move(brickType1);
 	mMaterials["brickType2"] = std::move(brickType2);
 	mMaterials["stone"] = std::move(stone);
+	mMaterials["tile"] = std::move(tile);
+	mMaterials["wood"] = std::move(wood);
 	mMaterials["treeSprites"] = std::move(treeSprites);
 }
 
@@ -2147,7 +2199,7 @@ void TreeBillboardsApp::BuildRenderItems()
 
 		XMStoreFloat4x4(&door->World, XMMatrixScaling(3.5f, 0.1f, 4.0f) * XMMatrixTranslation(0.0f, -6.5f, -10.0f) * XMMatrixRotationAxis(xAxis, degreeRotation45)) ;
 		door->ObjCBIndex = ObjCBIndex++;
-		door->Mat = mMaterials["stone"].get();
+		door->Mat = mMaterials["wood"].get();
 		door->Geo = mGeometries["boxGeo"].get();
 		door->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		door->IndexCount = door->Geo->DrawArgs["box"].IndexCount;
@@ -2191,7 +2243,7 @@ void TreeBillboardsApp::BuildRenderItems()
 
 		XMStoreFloat4x4(&floor->World, XMMatrixScaling(20.5, 0.5f, 20.5f) * XMMatrixTranslation(0.0f, 1.35f, 0.0f)) ;
 		floor->ObjCBIndex = ObjCBIndex++;
-		floor->Mat = mMaterials["stone"].get();
+		floor->Mat = mMaterials["tile"].get();
 		floor->Geo = mGeometries["boxGeo"].get();
 		floor->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		floor->IndexCount = floor->Geo->DrawArgs["box"].IndexCount;
