@@ -1713,7 +1713,7 @@ void TreeBillboardsApp::BuildRenderItems()
 		mAllRitems.push_back(std::move(wallRitemLeftFenceBack));
 		mAllRitems.push_back(std::move(wallRitemRightFenceBack));
 
-			mAllRitems.push_back(std::move(wallRitemFront1FenceSide));
+		mAllRitems.push_back(std::move(wallRitemFront1FenceSide));
 		mAllRitems.push_back(std::move(wallRitemFront2FenceSide));
 	}
 
