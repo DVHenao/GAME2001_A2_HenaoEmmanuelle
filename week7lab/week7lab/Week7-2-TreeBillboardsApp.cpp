@@ -25,6 +25,14 @@ using namespace DirectX::PackedVector;
 
 const int gNumFrameResources = 3;
 
+XMFLOAT3 pLight1Pos = { -9.25, 7, -9.25 } ;
+XMFLOAT3 pLight2Pos;
+XMFLOAT3 pLight3Pos;
+XMFLOAT3 pLight4Pos;
+
+XMFLOAT3 sLight1Pos = { 0, 10, -20 };
+XMFLOAT3 sLight1Dir = { 0, 2, -10 };
+
 // Lightweight structure stores parameters to draw a shape.  This will
 // vary from app-to-app.
 struct RenderItem
@@ -496,13 +504,27 @@ void TreeBillboardsApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.FarZ = 1000.0f;
 	mMainPassCB.TotalTime = gt.TotalTime();
 	mMainPassCB.DeltaTime = gt.DeltaTime();
-	mMainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
-	mMainPassCB.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
-	mMainPassCB.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
-	mMainPassCB.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
-	mMainPassCB.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
-	mMainPassCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
-	mMainPassCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
+	mMainPassCB.AmbientLight =  { 0.25f, 0.25f, 0.35f, 1.0f };
+
+	//pointlights
+	mMainPassCB.Lights[0].Position = { -9.25f, 7.0f, -9.25f};
+	mMainPassCB.Lights[0].Strength = { 1.0f, 0.0f, 0.0f };
+
+	mMainPassCB.Lights[1].Position = { -9.25f, 7.0f, 9.25f};
+	mMainPassCB.Lights[1].Strength = { 1.0f, 0.0f, 0.0f };
+
+	mMainPassCB.Lights[2].Position = { 9.25f, 5, -9.25f};
+	mMainPassCB.Lights[2].Strength = { 1.0f, 0.0f, 0.0f };
+
+	mMainPassCB.Lights[3].Position = { 9.25f, 5, 9.25f};
+	mMainPassCB.Lights[3].Strength = { 1.0f, 0.0f, 0.0f };
+
+
+	//spotlight
+	mMainPassCB.Lights[4].Position = sLight1Pos;
+	mMainPassCB.Lights[4].Direction = sLight1Dir;
+	mMainPassCB.Lights[4].Strength = { 1.0f, 0.0f, 1.0f };
+
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
@@ -1475,7 +1497,7 @@ void TreeBillboardsApp::BuildRenderItems()
 	treeSpritesRitem->BaseVertexLocation = treeSpritesRitem->Geo->DrawArgs["points"].BaseVertexLocation;
 
 	mRitemLayer[(int)RenderLayer::AlphaTestedTreeSprites].push_back(treeSpritesRitem.get());
-
+	
 	// 5 walls (front wall is 2 walls with opening)
 	for (int i = 0; i < 1; ++i)
 	{
