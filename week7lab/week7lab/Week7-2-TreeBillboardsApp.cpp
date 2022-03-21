@@ -504,26 +504,26 @@ void TreeBillboardsApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.FarZ = 1000.0f;
 	mMainPassCB.TotalTime = gt.TotalTime();
 	mMainPassCB.DeltaTime = gt.DeltaTime();
-	mMainPassCB.AmbientLight =  { 0.25f, 0.25f, 0.35f, 1.0f };
+	mMainPassCB.AmbientLight =  { 0.15f, 0.15f, 0.25f, 1.0f };
 
 	//pointlights
-	mMainPassCB.Lights[0].Position = { -9.25f, 7.0f, -9.25f};
-	mMainPassCB.Lights[0].Strength = { 1.0f, 0.0f, 0.0f };
+	mMainPassCB.Lights[0].Position = { -20.25f, 7.0f, -20.25f};
+	mMainPassCB.Lights[0].Strength = { 0.5f, 0.0f, 0.0f };
 
 	mMainPassCB.Lights[1].Position = { -9.25f, 7.0f, 9.25f};
-	mMainPassCB.Lights[1].Strength = { 1.0f, 0.0f, 0.0f };
+	mMainPassCB.Lights[1].Strength = { 0.0f, 0.0f, 0.5f };
 
 	mMainPassCB.Lights[2].Position = { 9.25f, 5, -9.25f};
-	mMainPassCB.Lights[2].Strength = { 1.0f, 0.0f, 0.0f };
+	mMainPassCB.Lights[2].Strength = { 0.5f, 0.0f, 0.0f };
 
 	mMainPassCB.Lights[3].Position = { 9.25f, 5, 9.25f};
-	mMainPassCB.Lights[3].Strength = { 1.0f, 0.0f, 0.0f };
+	mMainPassCB.Lights[3].Strength = { 0.0f, 0.0f, 0.5f };
 
 
 	//spotlight
 	mMainPassCB.Lights[4].Position = sLight1Pos;
 	mMainPassCB.Lights[4].Direction = sLight1Dir;
-	mMainPassCB.Lights[4].Strength = { 1.0f, 0.0f, 1.0f };
+	mMainPassCB.Lights[4].Strength = { 0.0f, 0.0f, 0.0f };
 
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
@@ -625,7 +625,7 @@ void TreeBillboardsApp::LoadTextures()
 	// CHANGE THE FILENAME TO WOOD.DDS WHEN ITS WORKING AGAIN
 	auto woodTex = std::make_unique<Texture>();
 	woodTex->Name = "woodTex";
-	woodTex->Filename = L"../Textures/ice.dds";
+	woodTex->Filename = L"../Textures/tile.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), woodTex->Filename.c_str(),
 		woodTex->Resource, woodTex->UploadHeap));
@@ -1409,8 +1409,8 @@ void TreeBillboardsApp::BuildMaterials()
 	wood->Name = "wood";
 	wood->MatCBIndex = 7;
 	wood->DiffuseSrvHeapIndex = 7;
-	wood->DiffuseAlbedo = XMFLOAT4(0.4f, 0.4f, 0.4f, 1.0f);
-	wood->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	wood->DiffuseAlbedo = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
+	wood->FresnelR0 = XMFLOAT3(0.5f, 0.51f, 0.51f);
 	wood->Roughness = 0.125f;
 
 	auto treeSprites = std::make_unique<Material>();
@@ -1445,7 +1445,7 @@ void TreeBillboardsApp::BuildRenderItems()
 
     auto wavesRitem = std::make_unique<RenderItem>();
     wavesRitem->World = MathHelper::Identity4x4();
-	XMStoreFloat4x4(&wavesRitem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
+	XMStoreFloat4x4(&wavesRitem->TexTransform, XMMatrixScaling(4.0f, 4.0f, 1.0f) * XMMatrixTranslation(0.0f, 1.0f, 0.0f));
 	wavesRitem->ObjCBIndex = 0;
 	wavesRitem->Mat = mMaterials["water"].get();
 	wavesRitem->Geo = mGeometries["waterGeo"].get();
@@ -1460,7 +1460,7 @@ void TreeBillboardsApp::BuildRenderItems()
 
     auto gridRitem = std::make_unique<RenderItem>();
     gridRitem->World = MathHelper::Identity4x4();
-	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f) * XMMatrixTranslation(0.0f, 1.0f, 0.0f));
+	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f) * XMMatrixTranslation(0.0f, 1.5f, 0.0f));
 	gridRitem->ObjCBIndex = 1;
 	gridRitem->Mat = mMaterials["grass"].get();
 	gridRitem->Geo = mGeometries["landGeo"].get();
