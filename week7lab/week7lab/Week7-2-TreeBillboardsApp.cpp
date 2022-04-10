@@ -13,6 +13,7 @@
 #include "../Common/MathHelper.h"
 #include "../Common/UploadBuffer.h"
 #include "../Common/GeometryGenerator.h"
+#include "../Common/Camera.h"
 #include "FrameResource.h"
 #include "Waves.h"
 
@@ -31,7 +32,7 @@ XMFLOAT3 pLight3Pos;
 XMFLOAT3 pLight4Pos;
 
 XMFLOAT3 sLight1Pos = { 0, 10, -20 };
-XMFLOAT3 sLight1Dir = { 0, 2, -10 };
+XMFLOAT3 sLight1Dir = { 0, 2, -20 };
 
 // Lightweight structure stores parameters to draw a shape.  This will
 // vary from app-to-app.
@@ -164,6 +165,9 @@ private:
     float mRadius = 50.0f;
 
     POINT mLastMousePos;
+	BoundingBox box;
+	Camera mCamera;
+	
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -357,30 +361,49 @@ void TreeBillboardsApp::OnMouseUp(WPARAM btnState, int x, int y)
 
 void TreeBillboardsApp::OnMouseMove(WPARAM btnState, int x, int y)
 {
+    //if((btnState & MK_LBUTTON) != 0)
+    //{
+    //    // Make each pixel correspond to a quarter of a degree.
+    //    float dx = XMConvertToRadians(0.25f*static_cast<float>(x - mLastMousePos.x));
+    //    float dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePos.y));
+
+    //    // Update angles based on input to orbit camera around box.
+    //    mTheta += dx;
+    //    mPhi += dy;
+
+    //    // Restrict the angle mPhi.
+    //    mPhi = MathHelper::Clamp(mPhi, 0.1f, MathHelper::Pi - 0.1f);
+    //}
+    //else if((btnState & MK_RBUTTON) != 0)
+    //{
+    //    // Make each pixel correspond to 0.2 unit in the scene.
+    //    float dx = 0.2f*static_cast<float>(x - mLastMousePos.x);
+    //    float dy = 0.2f*static_cast<float>(y - mLastMousePos.y);
+
+    //    // Update the camera radius based on input.
+    //    mRadius += dx - dy;
+
+    //    // Restrict the radius.
+    //    mRadius = MathHelper::Clamp(mRadius, 5.0f, 150.0f);
+    //}
+
+    //mLastMousePos.x = x;
+    //mLastMousePos.y = y;
+
+	//if left mouse button is down and moving
     if((btnState & MK_LBUTTON) != 0)
     {
-        // Make each pixel correspond to a quarter of a degree.
-        float dx = XMConvertToRadians(0.25f*static_cast<float>(x - mLastMousePos.x));
-        float dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePos.y));
+		// Make each pixel correspond to a quarter of a degree.
+		float dx = XMConvertToRadians(0.25f*static_cast<float>(x - mLastMousePos.x));
+		float dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePos.y));
 
-        // Update angles based on input to orbit camera around box.
-        mTheta += dx;
-        mPhi += dy;
+		//step4: Instead of updating the angles based on input to orbit camera around scene, 
+		//we rotate the camera’s look direction:
+		//mTheta += dx;
+		//mPhi += dy;
 
-        // Restrict the angle mPhi.
-        mPhi = MathHelper::Clamp(mPhi, 0.1f, MathHelper::Pi - 0.1f);
-    }
-    else if((btnState & MK_RBUTTON) != 0)
-    {
-        // Make each pixel correspond to 0.2 unit in the scene.
-        float dx = 0.2f*static_cast<float>(x - mLastMousePos.x);
-        float dy = 0.2f*static_cast<float>(y - mLastMousePos.y);
-
-        // Update the camera radius based on input.
-        mRadius += dx - dy;
-
-        // Restrict the radius.
-        mRadius = MathHelper::Clamp(mRadius, 5.0f, 150.0f);
+		mCamera.Pitch(dy);
+		mCamera.RotateY(dx);
     }
 
     mLastMousePos.x = x;
@@ -389,6 +412,24 @@ void TreeBillboardsApp::OnMouseMove(WPARAM btnState, int x, int y)
  
 void TreeBillboardsApp::OnKeyboardInput(const GameTimer& gt)
 {
+	//step3: we handle keyboard input to move the camera:
+
+	const float dt = gt.DeltaTime();
+
+	//GetAsyncKeyState returns a short (2 bytes)
+	if(GetAsyncKeyState('W') & 0x8000) //most significant bit (MSB) is 1 when key is pressed (1000 000 000 000)
+		mCamera.Walk(10.0f*dt);
+
+	if(GetAsyncKeyState('S') & 0x8000)
+		mCamera.Walk(-10.0f*dt);
+
+	if(GetAsyncKeyState('A') & 0x8000)
+		mCamera.Strafe(-10.0f*dt);
+
+	if(GetAsyncKeyState('D') & 0x8000)
+		mCamera.Strafe(10.0f*dt);
+
+	mCamera.UpdateViewMatrix();
 }
  
 void TreeBillboardsApp::UpdateCamera(const GameTimer& gt)
@@ -483,8 +524,11 @@ void TreeBillboardsApp::UpdateMaterialCBs(const GameTimer& gt)
 
 void TreeBillboardsApp::UpdateMainPassCB(const GameTimer& gt)
 {
-	XMMATRIX view = XMLoadFloat4x4(&mView);
-	XMMATRIX proj = XMLoadFloat4x4(&mProj);
+	/*XMMATRIX view = XMLoadFloat4x4(&mView);
+	XMMATRIX proj = XMLoadFloat4x4(&mProj);*/
+
+	XMMATRIX view = mCamera.GetView();
+	XMMATRIX proj = mCamera.GetProj();
 
 	XMMATRIX viewProj = XMMatrixMultiply(view, proj);
 	XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
@@ -523,7 +567,7 @@ void TreeBillboardsApp::UpdateMainPassCB(const GameTimer& gt)
 	//spotlight
 	mMainPassCB.Lights[4].Position = sLight1Pos;
 	mMainPassCB.Lights[4].Direction = sLight1Dir;
-	mMainPassCB.Lights[4].Strength = { 0.0f, 0.0f, 0.0f };
+	mMainPassCB.Lights[4].Strength = { 0.5f, 0.5f, 0.5f };
 
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
@@ -625,7 +669,7 @@ void TreeBillboardsApp::LoadTextures()
 	// CHANGE THE FILENAME TO WOOD.DDS WHEN ITS WORKING AGAIN
 	auto woodTex = std::make_unique<Texture>();
 	woodTex->Name = "woodTex";
-	woodTex->Filename = L"../Textures/tile.dds";
+	woodTex->Filename = L"../Textures/ice.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), woodTex->Filename.c_str(),
 		woodTex->Resource, woodTex->UploadHeap));
