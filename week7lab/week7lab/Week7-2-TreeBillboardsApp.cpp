@@ -238,7 +238,6 @@ bool TreeBillboardsApp::Initialize()
 
     // Wait until initialization is complete.
     FlushCommandQueue();
-
     return true;
 }
  
@@ -674,6 +673,13 @@ void TreeBillboardsApp::LoadTextures()
 		mCommandList.Get(), woodTex->Filename.c_str(),
 		woodTex->Resource, woodTex->UploadHeap));
 
+	auto hedgeTex = std::make_unique<Texture>();
+	hedgeTex->Name = "hedgeTex";
+	hedgeTex->Filename = L"../Textures/hedge.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), hedgeTex->Filename.c_str(),
+		hedgeTex->Resource, hedgeTex->UploadHeap));
+
 
 	auto treeArrayTex = std::make_unique<Texture>();
 	treeArrayTex->Name = "treeArrayTex";
@@ -682,7 +688,7 @@ void TreeBillboardsApp::LoadTextures()
 		mCommandList.Get(), treeArrayTex->Filename.c_str(),
 		treeArrayTex->Resource, treeArrayTex->UploadHeap));
 
-
+	
 	mTextures[grassTex->Name] = std::move(grassTex);
 	mTextures[waterTex->Name] = std::move(waterTex);
 	mTextures[fenceTex->Name] = std::move(fenceTex);
@@ -691,6 +697,7 @@ void TreeBillboardsApp::LoadTextures()
 	mTextures[stoneTex->Name] = std::move(stoneTex);
 	mTextures[tileTex->Name] = std::move(tileTex);
 	mTextures[woodTex->Name] = std::move(woodTex);
+	mTextures[hedgeTex->Name] = std::move(hedgeTex);
 	mTextures[treeArrayTex->Name] = std::move(treeArrayTex);
 
 }
@@ -741,7 +748,7 @@ void TreeBillboardsApp::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 9;
+	srvHeapDesc.NumDescriptors = 10;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -759,6 +766,7 @@ void TreeBillboardsApp::BuildDescriptorHeaps()
 	auto stoneTex = mTextures["stoneTex"]->Resource;
 	auto tileTex = mTextures["tileTex"]->Resource;
 	auto woodTex = mTextures["woodTex"]->Resource;
+	auto hedgeTex = mTextures["hedgeTex"]->Resource;
 	auto treeArrayTex = mTextures["treeArrayTex"]->Resource;
 
 
@@ -812,6 +820,11 @@ void TreeBillboardsApp::BuildDescriptorHeaps()
 	srvDesc.Format = woodTex->GetDesc().Format;
 	md3dDevice->CreateShaderResourceView(woodTex.Get(), &srvDesc, hDescriptor);
 
+	// next descriptor
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+
+	srvDesc.Format = hedgeTex->GetDesc().Format;
+	md3dDevice->CreateShaderResourceView(hedgeTex.Get(), &srvDesc, hDescriptor);
 
 	// next descriptor
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
@@ -987,6 +1000,7 @@ void TreeBillboardsApp::BuildBoxGeometry()
 	GeometryGenerator::MeshData wallPillarTop = geoGen.CreateCylinder(1.0f, 0.0f, 1.0f, 4, 5);
 	GeometryGenerator::MeshData fountainPillarTop = geoGen.CreateCylinder(1.0f, 0.0f, 1.0f, 8, 1);
 	GeometryGenerator::MeshData centerFountain = geoGen.CreateCylinder(2.0f, 0.0f, 1.0f, 4, 5);
+	GeometryGenerator::MeshData mazeWall = geoGen.CreateBox(1.0f, 5.0f, 0.5f, 1.0f);
 
 	// if things dont work, add the offset stuff here
 	UINT boxVertexOffset = 0;
@@ -1018,7 +1032,8 @@ void TreeBillboardsApp::BuildBoxGeometry()
 		fountainPillar.Vertices.size() +
 		wallPillarTop.Vertices.size() +
 		fountainPillarTop.Vertices.size() +
-		centerFountain.Vertices.size();
+		centerFountain.Vertices.size() +
+		mazeWall.Vertices.size();
 
 	std::vector<Vertex> vertices(totalVertexCount);
 
@@ -1098,6 +1113,14 @@ void TreeBillboardsApp::BuildBoxGeometry()
 		vertices[k].TexC = centerFountain.Vertices[i].TexC;
 	}
 
+	for (size_t i = 0; i < mazeWall.Vertices.size(); ++i, ++k)
+	{
+		auto& p = mazeWall.Vertices[i].Position;
+		vertices[k].Pos = p;
+		vertices[k].Normal = mazeWall.Vertices[i].Normal;
+		vertices[k].TexC = mazeWall.Vertices[i].TexC;
+	}
+
 	std::vector<std::uint16_t> indices;
 	indices.insert(indices.end(), std::begin(box.GetIndices16()), std::end(box.GetIndices16()));
 	indices.insert(indices.end(), std::begin(wall.GetIndices16()), std::end(wall.GetIndices16()));
@@ -1108,6 +1131,7 @@ void TreeBillboardsApp::BuildBoxGeometry()
 	indices.insert(indices.end(), std::begin(wallPillarTop.GetIndices16()), std::end(wallPillarTop.GetIndices16()));
 	indices.insert(indices.end(), std::begin(fountainPillarTop.GetIndices16()), std::end(fountainPillarTop.GetIndices16()));
 	indices.insert(indices.end(), std::begin(centerFountain.GetIndices16()), std::end(centerFountain.GetIndices16()));
+	indices.insert(indices.end(), std::begin(mazeWall.GetIndices16()), std::end(mazeWall.GetIndices16()));
 
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
@@ -1457,10 +1481,18 @@ void TreeBillboardsApp::BuildMaterials()
 	wood->FresnelR0 = XMFLOAT3(0.5f, 0.51f, 0.51f);
 	wood->Roughness = 0.125f;
 
+	auto hedge = std::make_unique<Material>();
+	hedge->Name = "hedge";
+	hedge->MatCBIndex = 8;
+	hedge->DiffuseSrvHeapIndex = 8;
+	hedge->DiffuseAlbedo = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
+	hedge->FresnelR0 = XMFLOAT3(0.5f, 0.51f, 0.51f);
+	hedge->Roughness = 0.125f;
+
 	auto treeSprites = std::make_unique<Material>();
 	treeSprites->Name = "treeSprites";
-	treeSprites->MatCBIndex = 8;
-	treeSprites->DiffuseSrvHeapIndex = 8;
+	treeSprites->MatCBIndex = 9;
+	treeSprites->DiffuseSrvHeapIndex = 9;
 	treeSprites->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	treeSprites->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	treeSprites->Roughness = 0.125f;
@@ -1473,6 +1505,7 @@ void TreeBillboardsApp::BuildMaterials()
 	mMaterials["stone"] = std::move(stone);
 	mMaterials["tile"] = std::move(tile);
 	mMaterials["wood"] = std::move(wood);
+	mMaterials["hedge"] = std::move(hedge);
 	mMaterials["treeSprites"] = std::move(treeSprites);
 }
 
@@ -2319,6 +2352,495 @@ void TreeBillboardsApp::BuildRenderItems()
 
 		mAllRitems.push_back(std::move(floor));
 	}
+
+	//maze exterior wals
+	for (int i = 0; i < 1; i++)
+	{
+		auto mazeWallLeft = std::make_unique<RenderItem>();
+		auto mazeWallRight = std::make_unique<RenderItem>();
+		auto mazeWallFrontLeft = std::make_unique<RenderItem>();
+		auto mazeWallFrontRight = std::make_unique<RenderItem>();
+		auto mazeWallBackLeft = std::make_unique<RenderItem>();
+		auto mazeWallBackRight = std::make_unique<RenderItem>();
+
+		auto mazeWallCastleBack = std::make_unique<RenderItem>();
+		auto mazeWallCastleLeft = std::make_unique<RenderItem>();
+		auto mazeWallCastleRight = std::make_unique<RenderItem>();
+
+		XMStoreFloat4x4(&mazeWallLeft->World, XMMatrixScaling(9.0f, 6.0f, 1.0f) * XMMatrixTranslation(20.5f, 2.0f, -15.0f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeWallLeft->ObjCBIndex = ObjCBIndex++;
+		mazeWallLeft->Mat = mMaterials["hedge"].get();
+		mazeWallLeft->Geo = mGeometries["boxGeo"].get();
+		mazeWallLeft->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWallLeft->IndexCount = mazeWallLeft->Geo->DrawArgs["wall"].IndexCount;
+		mazeWallLeft->StartIndexLocation = mazeWallLeft->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWallLeft->BaseVertexLocation = mazeWallLeft->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWallLeft.get());
+
+		XMStoreFloat4x4(&mazeWallRight->World, XMMatrixScaling(9.0f, 6.0f, 1.0f) * XMMatrixTranslation(20.5f, 2.0f, 15.0f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeWallRight->ObjCBIndex = ObjCBIndex++;
+		mazeWallRight->Mat = mMaterials["hedge"].get();
+		mazeWallRight->Geo = mGeometries["boxGeo"].get();
+		mazeWallRight->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWallRight->IndexCount = mazeWallRight->Geo->DrawArgs["wall"].IndexCount;
+		mazeWallRight->StartIndexLocation = mazeWallRight->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWallRight->BaseVertexLocation = mazeWallRight->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWallRight.get());
+
+		XMStoreFloat4x4(&mazeWallFrontLeft->World, XMMatrixScaling(1.5f, 6.0f, 1.0f) * XMMatrixTranslation(-8.5f, 2.0f, -60.5f));
+		mazeWallFrontLeft->ObjCBIndex = ObjCBIndex++;
+		mazeWallFrontLeft->Mat = mMaterials["hedge"].get();
+		mazeWallFrontLeft->Geo = mGeometries["boxGeo"].get();
+		mazeWallFrontLeft->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWallFrontLeft->IndexCount = mazeWallFrontLeft->Geo->DrawArgs["wall"].IndexCount;
+		mazeWallFrontLeft->StartIndexLocation = mazeWallFrontLeft->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWallFrontLeft->BaseVertexLocation = mazeWallFrontLeft->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWallFrontLeft.get());
+		
+		XMStoreFloat4x4(&mazeWallFrontRight->World, XMMatrixScaling(1.5f, 6.0f, 1.0f) * XMMatrixTranslation(8.5f, 2.0f, -60.5f));
+		mazeWallFrontRight->ObjCBIndex = ObjCBIndex++;
+		mazeWallFrontRight->Mat = mMaterials["hedge"].get();
+		mazeWallFrontRight->Geo = mGeometries["boxGeo"].get();
+		mazeWallFrontRight->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWallFrontRight->IndexCount = mazeWallFrontRight->Geo->DrawArgs["wall"].IndexCount;
+		mazeWallFrontRight->StartIndexLocation = mazeWallFrontRight->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWallFrontRight->BaseVertexLocation = mazeWallFrontRight->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWallFrontRight.get());
+		
+		XMStoreFloat4x4(&mazeWallBackLeft->World, XMMatrixScaling(1.5f, 6.0f, 1.0f) * XMMatrixTranslation(-8.5f, 2.0f, -10.5f));
+		mazeWallBackLeft->ObjCBIndex = ObjCBIndex++;
+		mazeWallBackLeft->Mat = mMaterials["hedge"].get();
+		mazeWallBackLeft->Geo = mGeometries["boxGeo"].get();
+		mazeWallBackLeft->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWallBackLeft->IndexCount = mazeWallBackLeft->Geo->DrawArgs["wall"].IndexCount;
+		mazeWallBackLeft->StartIndexLocation = mazeWallBackLeft->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWallBackLeft->BaseVertexLocation = mazeWallBackLeft->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWallBackLeft.get());
+
+		XMStoreFloat4x4(&mazeWallBackRight->World, XMMatrixScaling(1.5f, 6.0f, 1.0f) * XMMatrixTranslation(8.5f, 2.0f, -10.5f));
+		mazeWallBackRight->ObjCBIndex = ObjCBIndex++;
+		mazeWallBackRight->Mat = mMaterials["hedge"].get();
+		mazeWallBackRight->Geo = mGeometries["boxGeo"].get();
+		mazeWallBackRight->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWallBackRight->IndexCount = mazeWallBackRight->Geo->DrawArgs["wall"].IndexCount;
+		mazeWallBackRight->StartIndexLocation = mazeWallBackRight->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWallBackRight->BaseVertexLocation = mazeWallBackRight->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWallBackRight.get());
+
+		XMStoreFloat4x4(&mazeWallCastleBack->World, XMMatrixScaling(3.45f, 6.0f, 1.0f) * XMMatrixTranslation(0.0f, 2.0f, 20));
+		mazeWallCastleBack->ObjCBIndex = ObjCBIndex++;
+		mazeWallCastleBack->Mat = mMaterials["hedge"].get();
+		mazeWallCastleBack->Geo = mGeometries["boxGeo"].get();
+		mazeWallCastleBack->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWallCastleBack->IndexCount = mazeWallCastleBack->Geo->DrawArgs["wall"].IndexCount;
+		mazeWallCastleBack->StartIndexLocation = mazeWallCastleBack->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWallCastleBack->BaseVertexLocation = mazeWallCastleBack->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWallCastleBack.get());
+
+
+		mAllRitems.push_back(std::move(mazeWallLeft));
+		mAllRitems.push_back(std::move(mazeWallRight));
+		mAllRitems.push_back(std::move(mazeWallFrontLeft));
+		mAllRitems.push_back(std::move(mazeWallFrontRight));
+		mAllRitems.push_back(std::move(mazeWallBackLeft));
+		mAllRitems.push_back(std::move(mazeWallBackRight));
+		mAllRitems.push_back(std::move(mazeWallCastleBack));
+
+	}
+
+	//maze interior horizontal walls
+	for (int i = 0; i < 1; i++)
+	{
+		////left to right, back to front
+		auto mazeWall1 = std::make_unique<RenderItem>();
+		auto mazeWall2 = std::make_unique<RenderItem>();
+		auto mazeWall3 = std::make_unique<RenderItem>();
+		auto mazeWall4 = std::make_unique<RenderItem>();
+		auto mazeWall5 = std::make_unique<RenderItem>();
+		auto mazeWall6 = std::make_unique<RenderItem>();
+		auto mazeWall7 = std::make_unique<RenderItem>();
+		auto mazeWall8 = std::make_unique<RenderItem>();
+		auto mazeWall9 = std::make_unique<RenderItem>();
+		auto mazeWall10 = std::make_unique<RenderItem>();
+		auto mazeWall11 = std::make_unique<RenderItem>();
+		auto mazeWall12 = std::make_unique<RenderItem>();
+		auto mazeWall13 = std::make_unique<RenderItem>();
+		auto mazeWall14 = std::make_unique<RenderItem>();
+
+
+		XMStoreFloat4x4(&mazeWall1->World, XMMatrixScaling(2.0f, 4.0f, 1.0f) * XMMatrixTranslation(6.5f, 2.0f, -15.5f));
+		mazeWall1->ObjCBIndex = ObjCBIndex++;
+		mazeWall1->Mat = mMaterials["hedge"].get();
+		mazeWall1->Geo = mGeometries["boxGeo"].get();
+		mazeWall1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWall1->IndexCount = mazeWall1->Geo->DrawArgs["wall"].IndexCount;
+		mazeWall1->StartIndexLocation = mazeWall1->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWall1->BaseVertexLocation = mazeWall1->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWall1.get());
+
+		XMStoreFloat4x4(&mazeWall2->World, XMMatrixScaling(1.0f, 4.0f, 1.0f) * XMMatrixTranslation(-6.5f, 2.0f, -20.5f));
+		mazeWall2->ObjCBIndex = ObjCBIndex++;
+		mazeWall2->Mat = mMaterials["hedge"].get();
+		mazeWall2->Geo = mGeometries["boxGeo"].get();
+		mazeWall2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWall2->IndexCount = mazeWall2->Geo->DrawArgs["wall"].IndexCount;
+		mazeWall2->StartIndexLocation = mazeWall2->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWall2->BaseVertexLocation = mazeWall2->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWall2.get());
+
+		XMStoreFloat4x4(&mazeWall3->World, XMMatrixScaling(0.5f, 4.0f, 1.0f) * XMMatrixTranslation(9.25f, 2.0f, -20.5f));
+		mazeWall3->ObjCBIndex = ObjCBIndex++;
+		mazeWall3->Mat = mMaterials["hedge"].get();
+		mazeWall3->Geo = mGeometries["boxGeo"].get();
+		mazeWall3->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWall3->IndexCount = mazeWall3->Geo->DrawArgs["wall"].IndexCount;
+		mazeWall3->StartIndexLocation = mazeWall3->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWall3->BaseVertexLocation = mazeWall3->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWall3.get());
+
+		XMStoreFloat4x4(&mazeWall4->World, XMMatrixScaling(0.5f, 4.0f, 1.0f) * XMMatrixTranslation(-13.5f, 2.0f, -25.5f));
+		mazeWall4->ObjCBIndex = ObjCBIndex++;
+		mazeWall4->Mat = mMaterials["hedge"].get();
+		mazeWall4->Geo = mGeometries["boxGeo"].get();
+		mazeWall4->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWall4->IndexCount = mazeWall4->Geo->DrawArgs["wall"].IndexCount;
+		mazeWall4->StartIndexLocation = mazeWall4->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWall4->BaseVertexLocation = mazeWall4->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWall4.get());
+
+
+		XMStoreFloat4x4(&mazeWall5->World, XMMatrixScaling(1.0f, 4.0f, 1.0f) * XMMatrixTranslation(2.5f, 2.0f, -25.5f));
+		mazeWall5->ObjCBIndex = ObjCBIndex++;
+		mazeWall5->Mat = mMaterials["hedge"].get();
+		mazeWall5->Geo = mGeometries["boxGeo"].get();
+		mazeWall5->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWall5->IndexCount = mazeWall5->Geo->DrawArgs["wall"].IndexCount;
+		mazeWall5->StartIndexLocation = mazeWall5->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWall5->BaseVertexLocation = mazeWall5->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWall5.get());
+
+		XMStoreFloat4x4(&mazeWall6->World, XMMatrixScaling(1.0f, 4.0f, 1.0f) * XMMatrixTranslation(-6.5f, 2.0f, -30.5f));
+		mazeWall6->ObjCBIndex = ObjCBIndex++;
+		mazeWall6->Mat = mMaterials["hedge"].get();
+		mazeWall6->Geo = mGeometries["boxGeo"].get();
+		mazeWall6->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWall6->IndexCount = mazeWall6->Geo->DrawArgs["wall"].IndexCount;
+		mazeWall6->StartIndexLocation = mazeWall6->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWall6->BaseVertexLocation = mazeWall6->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWall6.get());
+
+		XMStoreFloat4x4(&mazeWall7->World, XMMatrixScaling(0.5f, 4.0f, 1.0f) * XMMatrixTranslation(9.25f, 2.0f, -30.5f));
+		mazeWall7->ObjCBIndex = ObjCBIndex++;
+		mazeWall7->Mat = mMaterials["hedge"].get();
+		mazeWall7->Geo = mGeometries["boxGeo"].get();
+		mazeWall7->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWall7->IndexCount = mazeWall7->Geo->DrawArgs["wall"].IndexCount;
+		mazeWall7->StartIndexLocation = mazeWall7->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWall7->BaseVertexLocation = mazeWall7->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWall7.get());
+
+		XMStoreFloat4x4(&mazeWall8->World, XMMatrixScaling(0.5f, 4.0f, 1.0f) * XMMatrixTranslation(5.0f, 2.0f, -35.5f));
+		mazeWall8->ObjCBIndex = ObjCBIndex++;
+		mazeWall8->Mat = mMaterials["hedge"].get();
+		mazeWall8->Geo = mGeometries["boxGeo"].get();
+		mazeWall8->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWall8->IndexCount = mazeWall8->Geo->DrawArgs["wall"].IndexCount;
+		mazeWall8->StartIndexLocation = mazeWall8->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWall8->BaseVertexLocation = mazeWall8->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWall8.get());
+
+		XMStoreFloat4x4(&mazeWall9->World, XMMatrixScaling(0.5f, 4.0f, 1.0f) * XMMatrixTranslation(13.5f, 2.0f, -35.5f));
+		mazeWall9->ObjCBIndex = ObjCBIndex++;
+		mazeWall9->Mat = mMaterials["hedge"].get();
+		mazeWall9->Geo = mGeometries["boxGeo"].get();
+		mazeWall9->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWall9->IndexCount = mazeWall9->Geo->DrawArgs["wall"].IndexCount;
+		mazeWall9->StartIndexLocation = mazeWall9->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWall9->BaseVertexLocation = mazeWall9->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWall9.get());
+
+		XMStoreFloat4x4(&mazeWall10->World, XMMatrixScaling(1.5f, 4.0f,1.0f) * XMMatrixTranslation(-4.5f, 2.0f, -40.5f));
+		mazeWall10->ObjCBIndex = ObjCBIndex++;
+		mazeWall10->Mat = mMaterials["hedge"].get();
+		mazeWall10->Geo = mGeometries["boxGeo"].get();
+		mazeWall10->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWall10->IndexCount = mazeWall10->Geo->DrawArgs["wall"].IndexCount;
+		mazeWall10->StartIndexLocation = mazeWall10->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWall10->BaseVertexLocation = mazeWall10->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWall10.get());
+
+		XMStoreFloat4x4(&mazeWall11->World, XMMatrixScaling(0.5f, 4.0f, 1.0f) * XMMatrixTranslation(9.25f, 2.0f, -40.5f));
+		mazeWall11->ObjCBIndex = ObjCBIndex++;
+		mazeWall11->Mat = mMaterials["hedge"].get();
+		mazeWall11->Geo = mGeometries["boxGeo"].get();
+		mazeWall11->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWall11->IndexCount = mazeWall11->Geo->DrawArgs["wall"].IndexCount;
+		mazeWall11->StartIndexLocation = mazeWall11->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWall11->BaseVertexLocation = mazeWall11->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWall11.get());
+
+		XMStoreFloat4x4(&mazeWall12->World, XMMatrixScaling(2.0f, 4.0f, 1.0f) * XMMatrixTranslation(-6.5f, 2.0f, -45.5f));
+		mazeWall12->ObjCBIndex = ObjCBIndex++;
+		mazeWall12->Mat = mMaterials["hedge"].get();
+		mazeWall12->Geo = mGeometries["boxGeo"].get();
+		mazeWall12->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWall12->IndexCount = mazeWall12->Geo->DrawArgs["wall"].IndexCount;
+		mazeWall12->StartIndexLocation = mazeWall12->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWall12->BaseVertexLocation = mazeWall12->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWall12.get());
+
+		XMStoreFloat4x4(&mazeWall13->World, XMMatrixScaling(1.5f, 4.0f, 1.0f) * XMMatrixTranslation(4.5f, 2.0f, -50.5f));
+		mazeWall13->ObjCBIndex = ObjCBIndex++;
+		mazeWall13->Mat = mMaterials["hedge"].get();
+		mazeWall13->Geo = mGeometries["boxGeo"].get();
+		mazeWall13->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWall13->IndexCount = mazeWall13->Geo->DrawArgs["wall"].IndexCount;
+		mazeWall13->StartIndexLocation = mazeWall13->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWall13->BaseVertexLocation = mazeWall13->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWall13.get());
+
+		XMStoreFloat4x4(&mazeWall14->World, XMMatrixScaling(0.5f, 4.0f, 1.0f) * XMMatrixTranslation(0.0f, 2.0f, -55.5f));
+		mazeWall14->ObjCBIndex = ObjCBIndex++;
+		mazeWall14->Mat = mMaterials["hedge"].get();
+		mazeWall14->Geo = mGeometries["boxGeo"].get();
+		mazeWall14->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeWall14->IndexCount = mazeWall14->Geo->DrawArgs["wall"].IndexCount;
+		mazeWall14->StartIndexLocation = mazeWall14->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeWall14->BaseVertexLocation = mazeWall14->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeWall14.get());
+
+
+
+		mAllRitems.push_back(std::move(mazeWall1));
+		mAllRitems.push_back(std::move(mazeWall2));
+		mAllRitems.push_back(std::move(mazeWall3));
+		mAllRitems.push_back(std::move(mazeWall4));
+		mAllRitems.push_back(std::move(mazeWall5));
+		mAllRitems.push_back(std::move(mazeWall6));
+		mAllRitems.push_back(std::move(mazeWall7));
+		mAllRitems.push_back(std::move(mazeWall8));
+		mAllRitems.push_back(std::move(mazeWall9));
+		mAllRitems.push_back(std::move(mazeWall10));
+		mAllRitems.push_back(std::move(mazeWall11));
+		mAllRitems.push_back(std::move(mazeWall12));
+		mAllRitems.push_back(std::move(mazeWall13));
+		mAllRitems.push_back(std::move(mazeWall14));
+	}
+
+	//maze interior veritcal walls
+	for (int i = 0; i < 1; i++)
+	{
+		auto mazeVertWall1 = std::make_unique<RenderItem>();
+		auto mazeVertWall2 = std::make_unique<RenderItem>();
+		auto mazeVertWall3 = std::make_unique<RenderItem>();
+		auto mazeVertWall4 = std::make_unique<RenderItem>();
+		auto mazeVertWall5 = std::make_unique<RenderItem>();
+		auto mazeVertWall6 = std::make_unique<RenderItem>();
+		auto mazeVertWall7 = std::make_unique<RenderItem>();
+		auto mazeVertWall8 = std::make_unique<RenderItem>();
+		auto mazeVertWall9 = std::make_unique<RenderItem>();
+		auto mazeVertWall10 = std::make_unique<RenderItem>();
+		auto mazeVertWall11 = std::make_unique<RenderItem>();
+		auto mazeVertWall12 = std::make_unique<RenderItem>();
+		auto mazeVertWall13 = std::make_unique<RenderItem>();
+		auto mazeVertWall14 = std::make_unique<RenderItem>();
+		auto mazeVertWall15 = std::make_unique<RenderItem>();
+		auto mazeVertWall16 = std::make_unique<RenderItem>();
+		auto mazeVertWall17 = std::make_unique<RenderItem>();
+
+		XMStoreFloat4x4(&mazeVertWall1->World, XMMatrixScaling(0.5f, 4.0f, 1.0f) * XMMatrixTranslation(13.5f, 2.0f, -6.5f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall1->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall1->Mat = mMaterials["hedge"].get();
+		mazeVertWall1->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall1->IndexCount = mazeVertWall1->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall1->StartIndexLocation = mazeVertWall1->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall1->BaseVertexLocation = mazeVertWall1->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall1.get());
+
+		XMStoreFloat4x4(&mazeVertWall2->World, XMMatrixScaling(0.5f, 4.0f, 1.0f) * XMMatrixTranslation(18.5f, 2.0f, -10.5f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall2->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall2->Mat = mMaterials["hedge"].get();
+		mazeVertWall2->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall2->IndexCount = mazeVertWall2->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall2->StartIndexLocation = mazeVertWall2->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall2->BaseVertexLocation = mazeVertWall2->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall2.get());
+
+		XMStoreFloat4x4(&mazeVertWall3->World, XMMatrixScaling(0.5f, 4.0f, 1.0f) * XMMatrixTranslation(18.25f, 2.0f, 2.5f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall3->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall3->Mat = mMaterials["hedge"].get();
+		mazeVertWall3->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall3->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall3->IndexCount = mazeVertWall3->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall3->StartIndexLocation = mazeVertWall3->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall3->BaseVertexLocation = mazeVertWall3->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall3.get());
+
+		XMStoreFloat4x4(&mazeVertWall4->World, XMMatrixScaling(1.0f, 4.0f, 1.0f) * XMMatrixTranslation(25.5f, 2.0f, -6.5f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall4->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall4->Mat = mMaterials["hedge"].get();
+		mazeVertWall4->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall4->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall4->IndexCount = mazeVertWall4->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall4->StartIndexLocation = mazeVertWall4->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall4->BaseVertexLocation = mazeVertWall4->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall4.get());
+
+		XMStoreFloat4x4(&mazeVertWall5->World, XMMatrixScaling(1.0f, 4.0f, 1.0f) * XMMatrixTranslation(25.5f, 2.0f, 11.0f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall5->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall5->Mat = mMaterials["hedge"].get();
+		mazeVertWall5->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall5->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall5->IndexCount = mazeVertWall5->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall5->StartIndexLocation = mazeVertWall5->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall5->BaseVertexLocation = mazeVertWall5->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall5.get());
+
+		XMStoreFloat4x4(&mazeVertWall6->World, XMMatrixScaling(2.2f, 4.0f, 1.0f) * XMMatrixTranslation(36.0f, 2.0f, 2.5f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall6->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall6->Mat = mMaterials["hedge"].get();
+		mazeVertWall6->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall6->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall6->IndexCount = mazeVertWall6->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall6->StartIndexLocation = mazeVertWall6->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall6->BaseVertexLocation = mazeVertWall6->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall6.get());
+
+		XMStoreFloat4x4(&mazeVertWall7->World, XMMatrixScaling(5.6f, 4.0f, 1.0f) * XMMatrixTranslation(36.0f, 2.0f, -15.0f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall7->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall7->Mat = mMaterials["hedge"].get();
+		mazeVertWall7->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall7->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall7->IndexCount = mazeVertWall7->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall7->StartIndexLocation = mazeVertWall7->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall7->BaseVertexLocation = mazeVertWall7->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall7.get());
+
+		XMStoreFloat4x4(&mazeVertWall8->World, XMMatrixScaling(0.6f, 4.0f, 1.0f) * XMMatrixTranslation(33.25f, 2.0f, -10.5f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall8->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall8->Mat = mMaterials["hedge"].get();
+		mazeVertWall8->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall8->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall8->IndexCount = mazeVertWall8->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall8->StartIndexLocation = mazeVertWall8->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall8->BaseVertexLocation = mazeVertWall8->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall8.get());
+
+		XMStoreFloat4x4(&mazeVertWall9->World, XMMatrixScaling(0.6f, 4.0f, 1.0f) * XMMatrixTranslation(33.25f, 2.0f, -2.5f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall9->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall9->Mat = mMaterials["hedge"].get();
+		mazeVertWall9->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall9->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall9->IndexCount = mazeVertWall9->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall9->StartIndexLocation = mazeVertWall9->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall9->BaseVertexLocation = mazeVertWall9->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall9.get());
+
+		XMStoreFloat4x4(&mazeVertWall10->World, XMMatrixScaling(0.6f, 4.0f, 1.0f) * XMMatrixTranslation(33.25f, 2.0f, 7.5f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall10->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall10->Mat = mMaterials["hedge"].get();
+		mazeVertWall10->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall10->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall10->IndexCount = mazeVertWall10->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall10->StartIndexLocation = mazeVertWall10->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall10->BaseVertexLocation = mazeVertWall10->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall10.get());
+
+		XMStoreFloat4x4(&mazeVertWall11->World, XMMatrixScaling(0.6f, 4.0f, 1.0f) * XMMatrixTranslation(38.25f, 2.0f, -6.5f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall11->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall11->Mat = mMaterials["hedge"].get();
+		mazeVertWall11->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall11->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall11->IndexCount = mazeVertWall11->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall11->StartIndexLocation = mazeVertWall11->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall11->BaseVertexLocation = mazeVertWall11->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall11.get());
+
+		XMStoreFloat4x4(&mazeVertWall12->World, XMMatrixScaling(2.15f, 4.0f, 1.0f) * XMMatrixTranslation(50.5f, 2.0f, 7.5f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall12->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall12->Mat = mMaterials["hedge"].get();
+		mazeVertWall12->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall12->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall12->IndexCount = mazeVertWall12->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall12->StartIndexLocation = mazeVertWall12->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall12->BaseVertexLocation = mazeVertWall12->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall12.get());
+
+		XMStoreFloat4x4(&mazeVertWall13->World, XMMatrixScaling(0.6f, 4.0f, 1.0f) * XMMatrixTranslation(42.75f, 2.0f, 11.5f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall13->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall13->Mat = mMaterials["hedge"].get();
+		mazeVertWall13->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall13->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall13->IndexCount = mazeVertWall13->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall13->StartIndexLocation = mazeVertWall13->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall13->BaseVertexLocation = mazeVertWall13->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall13.get());
+
+		XMStoreFloat4x4(&mazeVertWall14->World, XMMatrixScaling(1.0f, 4.0f, 1.0f) * XMMatrixTranslation(50.5f, 2.0f, -6.5f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall14->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall14->Mat = mMaterials["hedge"].get();
+		mazeVertWall14->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall14->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall14->IndexCount = mazeVertWall14->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall14->StartIndexLocation = mazeVertWall14->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall14->BaseVertexLocation = mazeVertWall14->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall14.get());
+
+		XMStoreFloat4x4(&mazeVertWall15->World, XMMatrixScaling(1.0f, 4.0f, 1.0f) * XMMatrixTranslation(55.5f, 2.0f, -10.5f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall15->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall15->Mat = mMaterials["hedge"].get();
+		mazeVertWall15->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall15->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall15->IndexCount = mazeVertWall15->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall15->StartIndexLocation = mazeVertWall15->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall15->BaseVertexLocation = mazeVertWall15->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall15.get());
+
+		XMStoreFloat4x4(&mazeVertWall16->World, XMMatrixScaling(0.6f, 4.0f, 1.0f) * XMMatrixTranslation(52.75f, 2.0f, 11.5f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall16->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall16->Mat = mMaterials["hedge"].get();
+		mazeVertWall16->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall16->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall16->IndexCount = mazeVertWall16->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall16->StartIndexLocation = mazeVertWall16->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall16->BaseVertexLocation = mazeVertWall16->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall16.get());
+
+		XMStoreFloat4x4(&mazeVertWall17->World, XMMatrixScaling(0.6f, 4.0f, 1.0f) * XMMatrixTranslation(57.75f, 2.0f, -2.25f) * XMMatrixRotationAxis(yAxis, degreeRotation90));
+		mazeVertWall17->ObjCBIndex = ObjCBIndex++;
+		mazeVertWall17->Mat = mMaterials["hedge"].get();
+		mazeVertWall17->Geo = mGeometries["boxGeo"].get();
+		mazeVertWall17->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mazeVertWall17->IndexCount = mazeVertWall17->Geo->DrawArgs["wall"].IndexCount;
+		mazeVertWall17->StartIndexLocation = mazeVertWall17->Geo->DrawArgs["wall"].StartIndexLocation;
+		mazeVertWall17->BaseVertexLocation = mazeVertWall17->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mRitemLayer[(int)RenderLayer::AlphaTested].push_back(mazeVertWall17.get());
+
+
+
+
+
+		mAllRitems.push_back(std::move(mazeVertWall1));
+		mAllRitems.push_back(std::move(mazeVertWall2));
+		mAllRitems.push_back(std::move(mazeVertWall3));
+		mAllRitems.push_back(std::move(mazeVertWall4));
+		mAllRitems.push_back(std::move(mazeVertWall5));
+		mAllRitems.push_back(std::move(mazeVertWall6));
+		mAllRitems.push_back(std::move(mazeVertWall7));
+		mAllRitems.push_back(std::move(mazeVertWall8));
+		mAllRitems.push_back(std::move(mazeVertWall9));
+		mAllRitems.push_back(std::move(mazeVertWall10));
+		mAllRitems.push_back(std::move(mazeVertWall11));
+		mAllRitems.push_back(std::move(mazeVertWall12));
+		mAllRitems.push_back(std::move(mazeVertWall13));
+		mAllRitems.push_back(std::move(mazeVertWall14));
+		mAllRitems.push_back(std::move(mazeVertWall15));
+		mAllRitems.push_back(std::move(mazeVertWall16));
+		mAllRitems.push_back(std::move(mazeVertWall17));
+
+	}
 	 
     mAllRitems.push_back(std::move(wavesRitem));
     mAllRitems.push_back(std::move(gridRitem));
@@ -2417,7 +2939,7 @@ std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> TreeBillboardsApp::GetStaticSam
 
 float TreeBillboardsApp::GetHillsHeight(float x, float z)const
 {
-    return 0.05f*(z*sinf(0.1f*x) + x*cosf(0.1f*z));
+    return 0.025f*(z*sinf(0.1f*x) + x*cosf(0.1f*z));
 }
 
 XMFLOAT3 TreeBillboardsApp::GetHillsNormal(float x, float z)const
