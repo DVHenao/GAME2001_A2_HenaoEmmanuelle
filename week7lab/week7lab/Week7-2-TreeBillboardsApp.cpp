@@ -668,14 +668,14 @@ void TreeBillboardsApp::LoadTextures()
 	// CHANGE THE FILENAME TO WOOD.DDS WHEN ITS WORKING AGAIN
 	auto woodTex = std::make_unique<Texture>();
 	woodTex->Name = "woodTex";
-	woodTex->Filename = L"../Textures/ice.dds";
+	woodTex->Filename = L"../Textures/tile.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), woodTex->Filename.c_str(),
 		woodTex->Resource, woodTex->UploadHeap));
 
 	auto hedgeTex = std::make_unique<Texture>();
 	hedgeTex->Name = "hedgeTex";
-	hedgeTex->Filename = L"../Textures/hedge.dds";
+	hedgeTex->Filename = L"../Textures/tile.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), hedgeTex->Filename.c_str(),
 		hedgeTex->Resource, hedgeTex->UploadHeap));
@@ -1228,30 +1228,38 @@ void TreeBillboardsApp::BuildTreeSpritesGeometry()
 	static const int treeCount = 16;
 	std::array<TreeSpriteVertex, 16> vertices;
 	//corner pieces
-	vertices[0].Pos = XMFLOAT3(-15, 8, -15);
+	vertices[0].Pos = XMFLOAT3(-20, 8, -15);
 	vertices[0].Size = XMFLOAT2(20.0f, 20.0f);
-	vertices[1].Pos = XMFLOAT3(15, 8, -15);
+	vertices[1].Pos = XMFLOAT3(20, 8, -15);
 	vertices[1].Size = XMFLOAT2(20.0f, 20.0f);
-	vertices[2].Pos = XMFLOAT3(-15, 8, 15);
+	vertices[2].Pos = XMFLOAT3(-20, 8, 15);
 	vertices[2].Size = XMFLOAT2(20.0f, 20.0f);
-	vertices[3].Pos = XMFLOAT3(15, 8, 15);
+	vertices[3].Pos = XMFLOAT3(20, 8, 15);
 	vertices[3].Size = XMFLOAT2(20.0f, 20.0f);
+	vertices[4].Pos = XMFLOAT3(-20, 8, 45);
+	vertices[4].Size = XMFLOAT2(20.0f, 20.0f);
+	vertices[5].Pos = XMFLOAT3(20, 8, 45);
+	vertices[5].Size = XMFLOAT2(20.0f, 20.0f);
+	vertices[6].Pos = XMFLOAT3(-20, 8, 15);
+	vertices[6].Size = XMFLOAT2(20.0f, 20.0f);
+	vertices[7].Pos = XMFLOAT3(20, 8, 15);
+	vertices[7].Size = XMFLOAT2(20.0f, 20.0f);
 
 	//pathway
-	vertices[4].Pos = XMFLOAT3(-5, 3, -20);
+	/*vertices[4].Pos = XMFLOAT3(-10, 3, -40);
 	vertices[4].Size = XMFLOAT2(5.0f, 5.0f);
-	vertices[5].Pos = XMFLOAT3(-5, 3, -30);
+	vertices[5].Pos = XMFLOAT3(-10, 3, -50);
 	vertices[5].Size = XMFLOAT2(5.0f, 5.0f);
 
-	vertices[6].Pos = XMFLOAT3(5, 1.5, -20);
+	vertices[6].Pos = XMFLOAT3(5, 1.5, -40);
 	vertices[6].Size = XMFLOAT2(5.0f, 5.0f);
-	vertices[7].Pos = XMFLOAT3(5, 1.5, -30);
-	vertices[7].Size = XMFLOAT2(5.0f, 5.0f);
+	vertices[7].Pos = XMFLOAT3(5, 1.5, -50);
+	vertices[7].Size = XMFLOAT2(5.0f, 5.0f);*/
 
 	for (UINT i = 8; i < treeCount; ++i)
 	{
-		float x = 10 + MathHelper::RandF(-45.0f, 45.0f);
-		float z = 10 + MathHelper::RandF(-45.0f, 45.0f);
+		float x = 11 + MathHelper::RandF(-65.0f, 45.0f);
+		float z = 11 + MathHelper::RandF(-15.0f, 45.0f);
 		float y = GetHillsHeight(x, z);
 
 		// Move tree slightly above land height.
@@ -1262,9 +1270,6 @@ void TreeBillboardsApp::BuildTreeSpritesGeometry()
 	}
 
 	
-
-
-
 	std::array<std::uint16_t, 16> indices =
 	{
 		0, 1, 2, 3, 4, 5, 6, 7,
