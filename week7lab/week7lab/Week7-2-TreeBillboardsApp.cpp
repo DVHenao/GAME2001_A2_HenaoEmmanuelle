@@ -668,14 +668,14 @@ void TreeBillboardsApp::LoadTextures()
 	// CHANGE THE FILENAME TO WOOD.DDS WHEN ITS WORKING AGAIN
 	auto woodTex = std::make_unique<Texture>();
 	woodTex->Name = "woodTex";
-	woodTex->Filename = L"../Textures/tile.dds";
+	woodTex->Filename = L"../Textures/bricks.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), woodTex->Filename.c_str(),
 		woodTex->Resource, woodTex->UploadHeap));
 
 	auto hedgeTex = std::make_unique<Texture>();
 	hedgeTex->Name = "hedgeTex";
-	hedgeTex->Filename = L"../Textures/tile.dds";
+	hedgeTex->Filename = L"../Textures/stone.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), hedgeTex->Filename.c_str(),
 		hedgeTex->Resource, hedgeTex->UploadHeap));
@@ -892,7 +892,7 @@ void TreeBillboardsApp::BuildLandGeometry()
     {
         auto& p = grid.Vertices[i].Position;
         vertices[i].Pos = p;
-        vertices[i].Pos.y = 1+ GetHillsHeight(p.x, p.z);
+        vertices[i].Pos.y = 1.1+ GetHillsHeight(p.x, p.z);
         vertices[i].Normal = GetHillsNormal(p.x, p.z);
 		vertices[i].TexC = grid.Vertices[i].TexC;
     }
@@ -945,7 +945,7 @@ void TreeBillboardsApp::BuildWavesGeometry()
     {
         for(int j = 0; j < n - 1; ++j)
         {
-            indices[k] = i*n + j;
+            indices[k] = i*n + j ;
             indices[k + 1] = i*n + j + 1;
             indices[k + 2] = (i + 1)*n + j;
 
